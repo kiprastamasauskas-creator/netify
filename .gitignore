@@ -1,0 +1,21 @@
+# Environment variables and secrets (CRITICAL)
+.env
+
+# Python cache & compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments (if applicable)
+venv/
+.venv/
+env/
+
+# IDE / Editor configuration
+.vscode/
+.idea/
+
+# OS metadata
+.DS_Store
+Thumbs.db

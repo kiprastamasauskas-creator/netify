@@ -1,0 +1,486 @@
+/* Palette Theme: WAI-FI Logo Dark Blue (#032B4F approx) and Off-White (#FDFBF0) */
+:root {
+    --dark-blue: #b3d3ef;
+    --navy-accent: #0b3d66;
+    --cream-light: #fefdf6;
+    --cream-dark: #f4f0db;
+    --text-dark: #0d1f2d;
+    --text-light: #0d1f2d;
+    --success-green: #2ec4b6;
+    --alert-orange: #e76f51;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: var(--cream-light);
+    color: var(--text-dark);
+    min-height: 100vh;
+    overflow-x: hidden; /* This kills the horizontal scrollbar */
+}
+
+/* Header & Nav */
+header {
+    background-color: var(--dark-blue);
+    color: var(--text-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 5%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-logo {
+    height: 60px !important;   /* Doubled from 40px to 80px */
+    width: auto !important;
+    object-fit: contain;
+    margin-right: 10px;
+}
+
+.logo-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+nav {
+    display: flex;
+    gap: 10px;
+}
+
+.nav-btn {
+    background: transparent;
+    border: 2px solid transparent;
+    color: var(--text-light);
+    padding: 0.6rem 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.3s;
+}
+
+.nav-btn:hover, .nav-btn.active {
+    background-color: var(--cream-light);
+    color: var(--dark-blue);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Layout Container */
+.content-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 20px;
+}
+
+/* Tab Management Visibility */
+.tab-content {
+    display: none;
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Top Hero Section */
+.top-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4rem;
+    min-height: 85vh; /* Pushes the next section down out of immediate view */
+    background-color: transparent; /* Removes the box effect for a seamless cream background */
+    border: none; /* Removes the thin black border */
+    margin-top: 0;
+    margin-bottom: 5rem;
+    font-family: 'Codec Pro', sans-serif;
+    animation: slowFadeIn 2s ease-in-out forwards; /* Triggers the fade-in animation */
+}
+
+.top-hero h1 {
+    font-size: 3.5rem; /* Made slightly larger for the main hero */
+    color: #000000;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.top-hero p {
+    font-size: 1.2rem;
+    color: #333333;
+    margin-bottom: 2rem;
+}
+
+/* Custom Slow Fade Keyframes */
+@keyframes slowFadeIn {
+    0% { 
+        opacity: 0; 
+        transform: translateY(20px); /* Starts slightly lower for a gentle upward glide */
+    }
+    100% { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+/* Split Home / Secondary Section (Full Width Band) */
+.hero-split {
+    /* 1. Full-Width Breakout Trick */
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+    
+    /* 2. Remove the card look */
+    border-radius: 0; 
+    box-sizing: border-box;
+    background-color: var(--dark-blue);
+    margin-top: 2rem;
+    margin-bottom: 0; /* Ensures nothing pushes up from the bottom */
+    
+    /* 3. Inner Layout & Spacing */
+    display: flex;
+    align-items: center;           
+    justify-content: center;       /* Centers the inner content instead of pushing to edges */
+    gap: 6rem;                     /* Increased gap slightly to keep it looking balanced */
+    padding: 5rem 2rem;    /* Maintains your top/bottom spacing */
+}
+
+
+
+.hero-text {
+    flex: 1;                       /* Takes up half the space */
+    text-align: left;              /* Aligns text strictly to the left */
+    font-family: 'Codec Pro', sans-serif;
+}
+
+.hero-text h2 {
+    font-size: 2.4rem;             /* Balanced size */
+    color: #000000;                /* Forces black text */
+    margin-bottom: 2rem;
+    line-height: 1.3;              /* Gives the text room to breathe */
+    font-weight: 700;
+}
+
+.hero-image {
+    flex: 1;                       /* Takes up the other half of the space */
+    display: flex;
+    justify-content: flex-end;     /* Pushes the image to the right side */
+}
+
+.hero-image img {
+    width: 100%;
+    max-width: 450px;              /* Prevents the image from getting too huge */
+    height: auto;
+    border-radius: 20px;           /* Gives the photo modern, rounded corners */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08); /* A soft, subtle shadow */
+    object-fit: cover;
+}
+
+/* Make it responsive for mobile screens */
+@media (max-width: 768px) {
+    .hero-split {
+        flex-direction: column;    /* Stacks them on top of each other on small screens */
+        text-align: center;
+        gap: 2rem;
+    }
+    .hero-text {
+        text-align: center;        /* Centers text on phones */
+    }
+    .hero-image {
+        justify-content: center;
+    }
+}
+
+.cta-btn {
+    background-color: var(--cream-dark);
+    color: var(--dark-blue);
+    border: none;
+    padding: 1rem 2.5rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.cta-btn:hover {
+    transform: scale(1.05);
+    background-color: #fff;
+}
+
+/* Subtitle utilities */
+h2 {
+    font-size: 2.2rem;
+    color: var(--dark-blue);
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: #555;
+    margin-bottom: 2rem;
+}
+
+/* Pricing Grid */
+.pricing-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.plan-card {
+    background: white;
+    border: 2px solid var(--cream-dark);
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+    transition: transform 0.3s;
+}
+
+.plan-card:hover {
+    transform: translateY(-5px);
+}
+
+.plan-card.featured {
+    border-color: var(--dark-blue);
+    position: relative;
+    background-color: #fafbfc;
+}
+
+.plan-card h3 {
+    font-size: 1.6rem;
+    color: var(--dark-blue);
+    margin-bottom: 1rem;
+}
+
+.plan-card .price {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--navy-accent);
+    margin-bottom: 1rem;
+}
+
+.plan-card p {
+    color: #666;
+    margin-bottom: 2rem;
+    min-height: 50px;
+}
+
+.select-plan-btn, .upgrade-btn {
+    background-color: var(--dark-blue);
+    color: white;
+    border: none;
+    width: 100%;
+    padding: 0.8rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.select-plan-btn:hover, .upgrade-btn:hover {
+    background-color: var(--navy-accent);
+}
+
+/* Forms Design */
+.form-card {
+    background: white;
+    max-width: 500px;
+    margin: 2rem auto;
+    padding: 2.5rem;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+    outline-color: var(--dark-blue);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.submit-btn {
+    background-color: var(--dark-blue);
+    color: white;
+    border: none;
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 1rem;
+}
+
+.submit-btn:hover {
+    background-color: var(--navy-accent);
+}
+
+/* Dashboard & Billing Elements */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 2.5rem;
+    margin-top: 1.5rem;
+}
+
+.dash-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+}
+
+.current-plan-box {
+    background-color: var(--cream-dark);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 5px solid var(--dark-blue);
+    margin: 1.5rem 0;
+}
+
+.current-plan-box h3 {
+    font-size: 1.4rem;
+    color: var(--dark-blue);
+    margin-bottom: 0.4rem;
+}
+
+.upgrade-zone {
+    margin-top: 2rem;
+}
+
+.upgrade-zone h3 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    color: #444;
+}
+
+.upgrade-btn {
+    margin-bottom: 0.5rem;
+    background-color: transparent;
+    color: var(--dark-blue);
+    border: 2px solid var(--dark-blue);
+}
+
+.upgrade-btn:hover {
+    background-color: var(--dark-blue);
+    color: white;
+}
+
+/* Bills interactive list */
+.bill-list {
+    list-style: none;
+    margin: 1.5rem 0;
+}
+
+.bill-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #eee;
+    margin-bottom: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.bill-list li:hover {
+    background-color: #f7f9fa;
+    border-color: var(--navy-accent);
+}
+
+.bill-list li.selected-bill {
+    border-2px: solid var(--dark-blue);
+    background-color: var(--cream-light);
+}
+
+.bill-status {
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.bill-status.unpaid {
+    background-color: #ffeae6;
+    color: var(--alert-orange);
+}
+
+.bill-status.paid {
+    background-color: #e3faf4;
+    color: var(--success-green);
+}
+
+/* Payment box drawer */
+.cc-box {
+    background: #fdfdfd;
+    border: 1px dashed var(--navy-accent);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-top: 1.5rem;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.cc-box h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    color: var(--navy-accent);
+}
+
+.payment-btn {
+    background-color: var(--success-green);
+}
+.payment-btn:hover {
+    background-color: #24a195;
+}
+
+/* Ensure the button inside matches your site theme */
+.btn-primary {
+    background-color: var(--dark-blue);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}

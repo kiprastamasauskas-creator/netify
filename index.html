@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netify</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <header>
+        <div class="logo-container">
+            <img src="netify2.png" alt="WAI-FI Logo" class="nav-logo">
+        </div>
+        <nav>
+            <button class="nav-btn active" onclick="switchTab('home')">HOME</button>
+            <button class="nav-btn" onclick="switchTab('create-account')">CREATE ACCOUNT</button>
+            <button class="nav-btn" onclick="switchTab('login')">LOG IN</button>
+            <button class="nav-btn hidden" id="nav-dashboard" onclick="switchTab('dashboard')">DASHBOARD</button>
+        </nav>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="content-container">
+
+<!-- HOME SECTION -->
+        <section id="home-tab" class="tab-content active">
+            
+            <!-- 1. Top Hero Section (Full Height & Animated) -->
+            <div class="top-hero">
+                <!-- Left Side: Text -->
+                <div class="hero-text">
+                    <h1>Welcome to Netify</h1>
+                    <p>Your trusted internet service provider.</p>
+                    <button class="cta-btn" onclick="switchTab('create-account')">Discover Our Services</button>
+                </div>
+                
+                <!-- Right Side: Image -->
+                <div class="hero-image">
+                    <img src="router.jpg" alt="Technician configuring internet router">
+                </div>
+            </div>
+
+            <!-- 2. Secondary Split Section (Scroll Down) -->
+            <div class="hero-split">
+                <!-- Left Side -->
+                  <div class="hero-image">
+                    <img src="happyman.jpg" alt="Happy man using smartphone">
+                </div>
+                <!-- Right side Side -->
+                <div class="hero-text">
+                    <h2>We provide fast, affordable<br>and secure internet services<br>for your home or business.</h2>
+                    <button class="cta-btn" onclick="switchTab('create-account')">Explore Our Products</button>
+                </div>
+                
+            </div>
+
+        </section>
+
+        <!-- CREATE ACCOUNT SECTION -->
+        <section id="create-account-tab" class="tab-content">
+            <h2>Create an Account</h2>
+            <p class="subtitle">Purchase a subscription online to get started</p>
+            
+            <div class="pricing-container">
+                <!-- Plan 1 -->
+                <div class="plan-card">
+                    <h3>Basic Plan</h3>
+                    <div class="price">$39/mo</div>
+                    <p>Perfect for browsing and light streaming. Up to 100 Mbps.</p>
+                    <button class="select-plan-btn" onclick="selectPlan('Basic Plan', 39)">Choose Basic</button>
+                </div>
+                <!-- Plan 2 -->
+                <div class="plan-card featured">
+                    <h3>Ultra Plan</h3>
+                    <div class="price">$59/mo</div>
+                    <p>Best for families and gaming. Up to 500 Mbps.</p>
+                    <button class="select-plan-btn" onclick="selectPlan('Ultra Plan', 59)">Choose Ultra</button>
+                </div>
+                <!-- Plan 3 -->
+                <div class="plan-card">
+                    <h3>Giga Plan</h3>
+                    <div class="price">$79/mo</div>
+                    <p>Maximum speed for heavy users. Up to 1 Gbps.</p>
+                    <button class="select-plan-btn" onclick="selectPlan('Giga Plan', 79)">Choose Giga</button>
+                </div>
+            </div>
+
+            <!-- Sign Up Form (Appears after plan selection) -->
+            <form id="signup-form" class="form-card hidden" onsubmit="handleSignUp(event)">
+                <h3 id="selected-plan-title">Signing up for: Basic Plan</h3>
+                
+                <!-- First & Last Name Rows -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="reg-fname">First Name</label>
+                        <input type="text" id="reg-fname" name="reg-fname" required placeholder="John">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-lname">Last Name</label>
+                        <input type="text" id="reg-lname" name="reg-lname" required placeholder="Doe">
+                    </div>
+                </div>
+
+                <!-- Date of Birth -->
+                <div class="form-group">
+                    <label for="reg-dob">Date of Birth</label>
+                    <input type="date" id="reg-dob" name="reg-dob" required>
+                </div>
+
+                <!-- Email Address -->
+                <div class="form-group">
+                    <label for="reg-email">Email Address</label>
+                    <input type="email" id="reg-email" name="reg-email" required placeholder="name@example.com">
+                </div>
+
+                <!-- Phone Number -->
+                <div class="form-group">
+                    <label for="reg-phone">Phone Number</label>
+                    <input type="tel" id="reg-phone" name="reg-phone" required placeholder="+32 470 12 34 56">
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label for="reg-password">Password</label>
+                    <input type="password" id="reg-password" name="reg-password" required placeholder="••••••••" minlength="8">
+                </div>
+
+                <!-- Address -->
+                <div class="form-group">
+                    <label for="reg-address">Street Address</label>
+                    <input type="text" id="reg-address" name="reg-address" required placeholder="e.g., Rue de la Loi 16, 1000 Bruxelles">
+                </div>
+                
+                <button type="submit" class="submit-btn">Complete Subscription & Register</button>
+            </form>
+
+        </section>
+
+<!-- VERIFICATION SECTION -->
+<section id="verify-tab" class="tab-content hidden">
+    <form id="verify-form" class="form-card" onsubmit="handleVerify(event)">
+        <h2>Verify Your Email</h2>
+        <div class="form-group">
+            <label for="otp_code">Enter the 6-digit code sent to your email:</label>
+            <input type="text" id="otp_code" name="otp_code" maxlength="6" required placeholder="123456">
+        </div>
+        <button type="submit" class="submit-btn">Verify Account</button>
+    </form>
+</section>
+
+ <!-- LOG IN SECTION -->
+<section id="login-tab" class="tab-content">
+    <div class="form-card">
+        
+        <!-- 1. Original Login Form Container -->
+        <div id="login-container">
+            <h2>Log In</h2>
+            <p class="subtitle">Access your portal to view plans and bills</p>
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-email">Email Address</label>
+                    <input type="email" id="login-email" name="login-email" required placeholder="name@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" name="login-password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="submit-btn">Log In</button>
+            </form>
+        </div>
+
+        <!-- 2. New MFA Verification Container (Hidden by default) -->
+        <div id="mfa-container" style="display: none;">
+            <h2>Security Verification</h2>
+            <p class="subtitle">Enter the 6-digit code sent to your email</p>
+            <form id="mfa-form" onsubmit="handleMfaVerify(event)">
+                <div class="form-group">
+                    <label for="mfa-code">Verification Code</label>
+                    <input type="text" id="mfa-code" name="mfa-code" required placeholder="123456" maxlength="6">
+                </div>
+                <button type="submit" class="submit-btn">Verify Code</button>
+            </form>
+        </div>
+
+    </div>
+</section>
+
+        <!-- CUSTOMER DASHBOARD (Combined Current Plan & Bills Tab) -->
+        <section id="dashboard-tab" class="tab-content">
+            <div class="dashboard-grid">
+                
+                <!-- Card 1: Plan Management -->
+                <div class="dash-card">
+                    <h2>Your Current Plan</h2>
+                    <div class="current-plan-box">
+                        <h3 id="dash-plan-name">No Active Subscription</h3>
+                        <p id="dash-plan-status">Please select a subscription plan under Create Account.</p>
+                    </div>
+                    
+                    <div class="upgrade-zone">
+                        <h3>Need a change? Available Plans:</h3>
+                        <button class="upgrade-btn" onclick="changeExistingPlan('Basic Plan', 39)">Switch to Basic ($39/mo)</button>
+                        <button class="upgrade-btn" onclick="changeExistingPlan('Ultra Plan', 59)">Switch to Ultra ($59/mo)</button>
+                        <button class="upgrade-btn" onclick="changeExistingPlan('Giga Plan', 79)">Switch to Giga ($79/mo)</button>
+                    </div>
+                </div>
+
+                <!-- Card 2: 💳 SAVED PAYMENT METHOD -->
+                <div class="dash-card">
+                    <h2>Saved Payment Method</h2>
+                    <p style="color: #718096; font-size: 0.9rem; margin-bottom: 15px;">
+                        Your sensitive data is instantly tokenized and stored in our secure, simulated offsite vault.
+                    </p>
+
+                    <!-- State A: Shown when the user HAS a saved card token -->
+                    <div id="saved-card-display" class="hidden" style="background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%); color: white; padding: 20px; border-radius: 12px; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+                        <div style="font-size: 1.2rem; font-weight: bold; margin-bottom: 25px;">Waifi Secure Pay</div>
+                        <div id="saved-card-num" style="font-family: monospace; font-size: 1.3rem; letter-spacing: 2px; margin-bottom: 15px;">•••• •••• •••• 0000</div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; text-transform: uppercase;">
+                            <span>Cardholder: Kipras</span>
+                            <span>Exp: <span id="saved-card-exp">--/--</span></span>
+                        </div>
+                        <button onclick="deleteSavedCard()" style="background: #e53e3e; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; position: absolute; top: 15px; right: 15px; cursor: pointer;">
+                            Remove
+                        </button>
+                    </div>
+
+                    <!-- State B: Shown when the user has NO saved card (The Tokenization Form) -->
+                    <div id="no-saved-card-display">
+                        <form id="save-card-form" onsubmit="handleSaveCard(event)">
+                            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                                <div>
+                                    <label style="display:block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Card Number</label>
+                                    <input type="text" id="save-card-num-input" placeholder="4000 1234 5678 9010" required style="width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box;">
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <div style="flex: 1;">
+                                        <label style="display:block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Expiry</label>
+                                        <input type="text" id="save-card-exp-input" placeholder="MM/YY" required style="width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box;">
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <label style="display:block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">CVC</label>
+                                        <input type="text" id="save-card-cvc-input" placeholder="123" required style="width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box;">
+                                    </div>
+                                </div>
+                                <button type="submit" style="background: #3182ce; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%;">
+                                    Tokenize & Save Card
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div> <!-- 🌟 FIXED: Added missing closing tag for Card 2 -->
+
+                <!-- Card 3: Bills & Payments -->
+                <div class="dash-card">
+                    <h2>Bills & Invoices</h2>
+                    <p class="subtitle">Select a bill to process credit card payment</p>
+                    
+                    <!-- Empty wrapper to be filled dynamically by Javascript -->
+                    <ul class="bill-list" id="dash-bill-list">
+                        <!-- Dynamic database records populate here -->
+                    </ul>
+
+                    <!-- Dynamic Credit Card Form -->
+                    <div id="cc-payment-box" class="cc-box hidden">
+                        <h3 id="payment-target">Paying for: July 2026 Statement</h3>
+                        <form onsubmit="handlePayment(event)">
+                            <div class="form-group">
+                                <label for="card-num">Card Number</label>
+                                <input type="text" id="card-num" placeholder="1234 5678 1234 5678" required maxlength="19">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="card-exp">Expiry</label>
+                                    <input type="text" id="card-exp" placeholder="MM/YY" required maxlength="5">
+                                </div>
+                                <div class="form-group">
+                                    <label for="card-cvc">CVC</label>
+                                    <input type="text" id="card-cvc" placeholder="123" required maxlength="4">
+                                </div>
+                            </div>
+                            <button type="submit" class="submit-btn payment-btn">Pay Bill Now</button>
+                        </form>
+                    </div>
+                </div> <!-- Closes Card 3 -->
+
+                <!-- Settings & Privacy Card -->
+                 <div class="dash-card">
+                    <h2>Settings & Privacy</h2>
+                    <p class="subtitle">Manage your personal data and GDPR preferences.</p>
+                    <button class="btn-primary" onclick="loadAndEditProfile()">Edit Personal Data</button>
+                 </div>
+
+            </div> <!-- 🌟 FIXED: Added missing closing tag for .dashboard-grid -->
+        </section>
+
+
+<!-- EDIT PROFILE SECTION (Hidden by default) -->
+<section id="edit-profile-tab" class="tab-content">
+    <div class="form-card">
+        <h2>Edit Personal Data</h2>
+        <form id="editProfileForm" onsubmit="handleProfileUpdate(event)">
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" id="edit-fname" name="first_name" required>
+                </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" id="edit-lname" name="last_name" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Date of Birth</label>
+                <input type="date" id="edit-dob" name="dob" required>
+            </div>
+
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="edit-email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="tel" id="edit-phone" name="phone" required>
+            </div>
+
+            <div class="form-group">
+                <label>Street Address</label>
+                <input type="text" id="edit-address" name="address" required>
+            </div>
+
+            <div class="form-group">
+                <label>New Password (Leave blank to keep current)</label>
+                <input type="password" id="edit-password" name="password" placeholder="••••••••">
+            </div>
+
+            <button type="submit" class="submit-btn">Save & Update Profile</button>
+        </form>
+    </div>
+</section>
+
+</main>
+
+    <script src="script.js"></script>
+</body>
+</html>
