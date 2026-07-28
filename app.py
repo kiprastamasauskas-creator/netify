@@ -99,6 +99,36 @@ def decrypt_card(encrypted_str):
     except Exception:
         return "DECRYPTION_ERROR"
 
+@app.after_request
+def add_security_headers(response):
+    # Prevent Clickjacking
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+
+    # Prevent MIME-type sniffing
+    response.headers["X-Content-Type-Options"] = "nosniff"
+
+    # Complete Content Security Policy (resolves ZAP warnings)
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self'; "
+        "style-src 'self'; "
+        "frame-ancestors 'self'; "
+        "form-action 'self';"
+    )
+
+    # Protect privacy on outgoing links
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+    # Disable unused hardware API access
+    response.headers["Permissions-Policy"] = (
+        "geolocation=(), microphone=(), camera=()"
+    )
+
+    # Mask application server signature
+    response.headers["Server"] = "Netify Server"
+
+    return response
+
 @app.route('/')
 def home():
     return send_from_directory('.', 'index.html')

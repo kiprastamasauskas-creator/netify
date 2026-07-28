@@ -484,3 +484,101 @@ h2 {
     border-radius: 6px;
     cursor: pointer;
 }
+
+/* ==========================================================================
+   New Utility Classes (Replaces inline style="..." attributes)
+   ========================================================================== */
+
+/* Subtitle/Text styling */
+.text-muted {
+    color: #718096;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+/* Saved Payment Card Box */
+.saved-card-box {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.saved-card-brand {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 25px;
+}
+
+.saved-card-number {
+    font-family: monospace;
+    font-size: 1.3rem;
+    letter-spacing: 2px;
+    margin-bottom: 15px;
+}
+
+.saved-card-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+}
+
+.btn-remove-card {
+    background: #e53e3e;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    cursor: pointer;
+}
+
+/* Saved Card Form Helpers */
+.form-flex-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.form-label-styled {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.form-input-styled {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.form-flex-row {
+    display: flex;
+    gap: 10px;
+}
+
+.flex-fill {
+    flex: 1;
+}
+
+.btn-tokenize {
+    background: #3182ce;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+    width: 100%;
+}

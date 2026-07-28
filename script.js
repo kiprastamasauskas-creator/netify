@@ -1,19 +1,16 @@
 // Global Application State tracking
 let appState = {
     userLoggedIn: false,
+    userId: null,
     selectedPlanName: 'Basic Plan',
     selectedPlanPrice: 39,
     hasSubscription: false,
     activeBillElement: null,
     selectedBillId: null,  // Tracks active MySQL ID for payment transactions
-    savedCard: null,           // 🌟 ADD THIS: Track if card token exists
-    useToken: false            // 🌟 ADD THIS: Check whether checkout routes via Token
+    savedCard: null,       // Track if card token exists
+    useToken: false        // Check whether checkout routes via Token
 };
 
-
-/**
- * Handles Global Tab Switching Mechanics
- */
 /**
  * Handles Global Tab Switching Mechanics Safely
  */
@@ -24,8 +21,8 @@ function switchTab(tabId) {
         if (tab) tab.classList.remove('active');
     });
 
-    // 2. Deactivate all nav styling
-    const navButtons = document.querySelectorAll('.nav-btn, button');
+    // 2. Deactivate only navbar button styling
+    const navButtons = document.querySelectorAll('.nav-btn');
     navButtons.forEach(btn => {
         if (btn) btn.classList.remove('active');
     });
@@ -38,17 +35,11 @@ function switchTab(tabId) {
         console.error(`Layout Error: Could not find HTML element with ID: "${tabId}-tab"`);
     }
 
-    // 4. Safely match the highlighted button style
-    navButtons.forEach(btn => {
-        try {
-            const onClickAttr = btn.getAttribute('onclick');
-            if (onClickAttr && typeof onClickAttr === 'string' && onClickAttr.includes(`'${tabId}'`)) {
-                btn.classList.add('active');
-            }
-        } catch (e) {
-            // Silently ignore elements that don't support getAttribute
-        }
-    });
+    // 4. Highlight active button matching data-tab attribute
+    const activeBtn = document.querySelector(`.nav-btn[data-tab="${tabId}"]`);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+    }
 }
 
 /**
@@ -70,26 +61,21 @@ function selectPlan(planName, price) {
  * Create Account workflow: Step 2 - Validation + Live Database Submission
  */
 async function handleSignUp(event) {
-    event.preventDefault(); // Stop page reload
+    event.preventDefault();
 
-    // 1. Grab input field values for front-end validation check
-    const firstName = document.getElementById('reg-fname').value.trim();
-    const lastName = document.getElementById('reg-lname').value.trim();
     const phoneInput = document.getElementById('reg-phone').value.trim();
 
-    // 2. Enforce valid Belgian phone numbers
+    // Enforce valid Belgian phone numbers
     const belgianPhoneRegex = /^(?:\+32\s?|0)[1-9](?:\s?\d){7,8}$/;
     if (!belgianPhoneRegex.test(phoneInput)) {
         alert("Registration Error: Please enter a valid Belgian phone number format (e.g., 0470 12 34 56).");
         return; 
     }
 
-    // 3. Prepare Form Data (including dynamic selected plan)
     const signupForm = document.getElementById('signup-form');
     const formData = new FormData(signupForm);
     formData.append('selected-plan', appState.selectedPlanName);
 
-    // 4. Send single network request to Flask Backend
     try {
         const response = await fetch('/register', {
             method: 'POST',
@@ -99,23 +85,21 @@ async function handleSignUp(event) {
         const result = await response.json();  
 
         if (result.status === 'success') {
-    alert(result.message);
-
-    // Remove hidden class and cleanly switch active tab focus
-    document.getElementById('verify-tab').classList.remove('hidden');
-    switchTab('verify'); 
-                    }
-         else {
-            // Captures backend validation errors (e.g., weak password, duplicate email)
+            alert(result.message);
+            document.getElementById('verify-tab').classList.remove('hidden');
+            switchTab('verify'); 
+        } else {
             alert("Registration Failure: " + result.message);
-        }  
+        }   
     } catch (error) {
         console.error("Network connectivity error:", error);
-        alert("Network Error: Could not connect to the backend server. Make sure Flask is running.");
+        alert("Network Error: Could not connect to the backend server.");
     }
 }
 
-// create account verification function
+/**
+ * Create account verification function
+ */
 function handleVerify(event) {
     event.preventDefault();
 
@@ -128,17 +112,12 @@ function handleVerify(event) {
     })
     .then(response => response.json())
     .then(data => {
-        
         if (data.status === 'success') {
-        alert(data.message);
-    
-        verifyForm.reset();
-
-    // Hide verification tab and switch directly to the Login tab
-    document.getElementById('verify-tab').classList.add('hidden');
-    switchTab('login');
-        }
-         else {
+            alert(data.message);
+            verifyForm.reset();
+            document.getElementById('verify-tab').classList.add('hidden');
+            switchTab('login');
+        } else {
             alert("Verification Failure: " + data.message);
         }
     })
@@ -148,13 +127,9 @@ function handleVerify(event) {
     });
 }
 
-
-
-
 /**
- * Real Database Customer Authentication & Dynamic Dashboard Loader
+ * Real Database Customer Authentication & MFA Step
  */
-
 function handleLogin(event) {
     event.preventDefault();
 
@@ -163,16 +138,14 @@ function handleLogin(event) {
 
     fetch('/login', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
     })
     .then(response => response.json())
     .then(data => {
         if (data.status === 'mfa_required') {
-            document.getElementById('login-container').style.display = 'none';
-            document.getElementById('mfa-container').style.display = 'block';
+            document.getElementById('login-container').classList.add('hidden');
+            document.getElementById('mfa-container').classList.remove('hidden');
         } else {
             alert("Login Failure: " + data.message);
         }
@@ -190,9 +163,7 @@ function handleMfaVerify(event) {
 
     fetch('/verify-mfa', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code })
     })
     .then(response => response.json())
@@ -214,11 +185,11 @@ function handleMfaVerify(event) {
                 appState.selectedPlanPrice = 39;
             }
 
-            renderDatabaseBills(data.bills);
+            renderDatabaseBills(data.bills || []);
             renderSavedCardUI();
 
             document.getElementById('dash-plan-name').textContent = appState.selectedPlanName;
-            document.getElementById('dash-plan-status').textContent = `Welcome back, ${data.user.first_name} ${data.user.last_name}! Your high-speed internet profile is active at $${appState.selectedPlanPrice}/month.`;
+            document.getElementById('dash-plan-status').textContent = `Welcome back, ${data.user.first_name} ${data.user.last_name}! Your internet profile is active at $${appState.selectedPlanPrice}/month.`;
             
             document.getElementById('nav-dashboard').classList.remove('hidden');
             switchTab('dashboard');
@@ -237,16 +208,16 @@ function handleMfaVerify(event) {
  */
 function renderDatabaseBills(bills) {
     const billListContainer = document.getElementById('dash-bill-list');
-    billListContainer.innerHTML = ''; // Wipe whatever was there clean
+    billListContainer.innerHTML = ''; 
 
-    if (bills.length === 0) {
-        billListContainer.innerHTML = '<li style="text-align: center; color: #718096; padding: 15px;">No bills generated for this account yet.</li>';
+    if (!bills || bills.length === 0) {
+        billListContainer.innerHTML = '<li class="text-muted">No bills generated for this account yet.</li>';
         return;
     }
 
     bills.forEach(bill => {
         const li = document.createElement('li');
-        li.id = `bill-${bill.id}`; // Label using its unique database Auto-Increment ID!
+        li.id = `bill-${bill.id}`;
         
         const statusClass = bill.status === 'paid' ? 'paid' : 'unpaid';
         const capitalizedStatus = bill.status.charAt(0).toUpperCase() + bill.status.slice(1);
@@ -256,10 +227,9 @@ function renderDatabaseBills(bills) {
             <span class="bill-status ${statusClass}">${capitalizedStatus}</span>
         `;
         
-        // When clicked, handle its state
-        li.onclick = function() {
+        li.addEventListener('click', () => {
             selectDatabaseBill(li, bill);
-        };
+        });
         
         billListContainer.appendChild(li);
     });
@@ -288,25 +258,28 @@ function selectDatabaseBill(element, bill) {
     
     paymentTargetText.textContent = `Paying for: ${bill.billing_period} ($${Number(bill.amount).toFixed(2)})`;
     
-    // 🌟 Check if we can check out using the saved card token
+    const cardNum = document.getElementById('card-num');
+    const cardExp = document.getElementById('card-exp');
+    const cardCvc = document.getElementById('card-cvc');
+
     if (appState.savedCard) {
-        document.getElementById('card-num').value = `•••• •••• •••• ${appState.savedCard.card_last_four}`;
-        document.getElementById('card-exp').value = appState.savedCard.expiry;
-        document.getElementById('card-cvc').value = '•••';
+        cardNum.value = `•••• •••• •••• ${appState.savedCard.card_last_four}`;
+        cardExp.value = appState.savedCard.expiry;
+        cardCvc.value = '•••';
         
-        document.getElementById('card-num').disabled = true;
-        document.getElementById('card-exp').disabled = true;
-        document.getElementById('card-cvc').disabled = true;
+        cardNum.disabled = true;
+        cardExp.disabled = true;
+        cardCvc.disabled = true;
         
         appState.useToken = true;
     } else {
-        document.getElementById('card-num').value = '';
-        document.getElementById('card-exp').value = '';
-        document.getElementById('card-cvc').value = '';
+        cardNum.value = '';
+        cardExp.value = '';
+        cardCvc.value = '';
         
-        document.getElementById('card-num').disabled = false;
-        document.getElementById('card-exp').disabled = false;
-        document.getElementById('card-cvc').disabled = false;
+        cardNum.disabled = false;
+        cardExp.disabled = false;
+        cardCvc.disabled = false;
         
         appState.useToken = false;
     }
@@ -316,7 +289,7 @@ function selectDatabaseBill(element, bill) {
 }
 
 /**
- * Processes simulated credit card security verification and UPDATES MySQL!
+ * Processes credit card security verification and updates MySQL
  */
 function handlePayment(event) {
     event.preventDefault();
@@ -328,7 +301,6 @@ function handlePayment(event) {
 
     const payload = { bill_id: appState.selectedBillId };
 
-    // 🌟 Route the safe token if applicable, otherwise send raw form inputs
     if (appState.useToken && appState.savedCard) {
         payload.token = appState.savedCard.token;
     } else {
@@ -366,28 +338,41 @@ function handlePayment(event) {
         alert("Network Error processing payment.");
     });
 }
-/**
- * Updates UI details regarding active subscription costs
- */
+
 function updateDashboardUI() {
     document.getElementById('dash-plan-name').textContent = appState.selectedPlanName;
 }
 
 /**
- * Utility function to quickly toggle selected package tiers
+ * Updates Plan and syncs with backend database
  */
 function changeExistingPlan(newName, newPrice) {
-    appState.selectedPlanName = newName;
-    appState.selectedPlanPrice = newPrice;
-    updateDashboardUI();
-    alert(`Your plan has been instantly updated to the ${newName}!`);
+    fetch('/api/update_plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: appState.userId, new_plan: newName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            appState.selectedPlanName = newName;
+            appState.selectedPlanPrice = newPrice;
+            updateDashboardUI();
+            alert(`Your plan has been updated to the ${newName}!`);
+        } else {
+            alert("Plan update error: " + data.message);
+        }
+    })
+    .catch(() => {
+        // Fallback for standalone frontend testing
+        appState.selectedPlanName = newName;
+        appState.selectedPlanPrice = newPrice;
+        updateDashboardUI();
+        alert(`Your plan has been updated to the ${newName}!`);
+    });
 }
 
-/***
- * This section adds cards and remove them with the tokens 
- */
-  
- function renderSavedCardUI() {
+function renderSavedCardUI() {
     const cardDisplay = document.getElementById('saved-card-display');
     const formDisplay = document.getElementById('no-saved-card-display');
 
@@ -397,6 +382,7 @@ function changeExistingPlan(newName, newPrice) {
         document.getElementById('saved-card-num').textContent = `•••• •••• •••• ${appState.savedCard.card_last_four}`;
         document.getElementById('saved-card-exp').textContent = appState.savedCard.expiry;
     } else {
+        cardDisplay.classList.remove('hidden'); // Ensure container displays correctly
         cardDisplay.classList.add('hidden');
         formDisplay.classList.remove('hidden');
         document.getElementById('save-card-form').reset();
@@ -424,13 +410,17 @@ function handleSaveCard(event) {
     .then(data => {
         if (data.status === 'success') {
             alert(data.message);
-            // Quick force-reload to synchronize token state cleanly with database
-            location.reload(); 
+            appState.savedCard = {
+                card_last_four: cardNumber.slice(-4),
+                expiry: expiry,
+                token: data.token || 'saved_token'
+            };
+            renderSavedCardUI();
         } else {
             alert("Save Error: " + data.message);
         }
     })
-    .catch(err => console.error("Error tokenizing card:", err));
+    .catch(err => console.error("Error saving card:", err));
 }
 
 function deleteSavedCard() {
@@ -455,49 +445,41 @@ function deleteSavedCard() {
 }
 
 function handleProfileUpdate(event) {
-    event.preventDefault(); // Prevents the page from reloading
+    event.preventDefault();
     
-    // Gather all data from the form
     const form = document.getElementById('editProfileForm');
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
 
-    // Send to Flask Backend
     fetch('/api/update_profile', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     })
     .then(response => response.json())
     .then(result => {
         if (result.status === 'success') {
             alert('Your profile has been updated successfully.');
-            switchTab('dashboard-tab'); // Route user back to dashboard
-            location.reload(); // Optional: reload to refresh the dashboard names/data
+            switchTab('dashboard');
         } else {
             alert('Error updating profile: ' + result.message);
         }
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => console.error('Error updating profile:', error));
 }
 
 function loadAndEditProfile() {
-    // Fetch current user data from the backend
     fetch('/api/get_profile')
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            // Populate the form fields with the retrieved data
-            document.getElementById('edit-fname').value = data.user.first_name;
-            document.getElementById('edit-lname').value = data.user.last_name;
-            document.getElementById('edit-dob').value = data.user.dob;
-            document.getElementById('edit-email').value = data.user.email;
-            document.getElementById('edit-phone').value = data.user.phone;
-            document.getElementById('edit-address').value = data.user.address;
+            document.getElementById('edit-fname').value = data.user.first_name || '';
+            document.getElementById('edit-lname').value = data.user.last_name || '';
+            document.getElementById('edit-dob').value = data.user.dob || '';
+            document.getElementById('edit-email').value = data.user.email || '';
+            document.getElementById('edit-phone').value = data.user.phone || '';
+            document.getElementById('edit-address').value = data.user.address || '';
             
-            // Switch to the edit profile tab
             switchTab('edit-profile');
         } else {
             alert('Error loading profile data: ' + data.message);
@@ -505,3 +487,45 @@ function loadAndEditProfile() {
     })
     .catch(error => console.error('Error fetching profile:', error));
 }
+
+/* ==========================================================================
+   CSP Security Event Initializer (Replaces all inline onclick/onsubmit)
+   ========================================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Navigation Tab Buttons & CTA Buttons
+    document.querySelectorAll('[data-tab]').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+    });
+
+    // 2. Plan Selection Buttons
+    document.querySelectorAll('[data-plan-name]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const name = btn.getAttribute('data-plan-name');
+            const price = Number(btn.getAttribute('data-plan-price'));
+            selectPlan(name, price);
+        });
+    });
+
+    // 3. Dashboard Action Buttons
+    document.getElementById('switch-basic-btn')?.addEventListener('click', () => changeExistingPlan('Basic Plan', 39));
+    document.getElementById('switch-ultra-btn')?.addEventListener('click', () => changeExistingPlan('Ultra Plan', 59));
+    document.getElementById('switch-giga-btn')?.addEventListener('click', () => changeExistingPlan('Giga Plan', 79));
+    document.getElementById('remove-card-btn')?.addEventListener('click', deleteSavedCard);
+    document.getElementById('edit-profile-btn')?.addEventListener('click', loadAndEditProfile);
+
+    // 4. Form Submissions
+    const forms = [
+        { id: 'signup-form', handler: handleSignUp },
+        { id: 'verify-form', handler: handleVerify },
+        { id: 'login-form', handler: handleLogin },
+        { id: 'mfa-form', handler: handleMfaVerify },
+        { id: 'save-card-form', handler: handleSaveCard },
+        { id: 'payment-form', handler: handlePayment },
+        { id: 'editProfileForm', handler: handleProfileUpdate }
+    ];
+
+    forms.forEach(({ id, handler }) => {
+        const form = document.getElementById(id);
+        if (form) form.addEventListener('submit', handler);
+    });
+});

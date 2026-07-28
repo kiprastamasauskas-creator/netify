@@ -19,3 +19,5 @@ env/
 # OS metadata
 .DS_Store
 Thumbs.db
+
+waifi_db.sql
