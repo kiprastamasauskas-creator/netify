@@ -5,13 +5,15 @@ import pymysql
 # 🌟 Added check_password_hash here
 from werkzeug.security import generate_password_hash, check_password_hash
 import base64
-import secrets
 import smtplib
 from email.message import EmailMessage
 import os
 import secrets
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+
+app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
 
 load_dotenv() # Loads variables from .env
 
@@ -68,7 +70,6 @@ def send_mfa_email(recipient_email, code):
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
         server.send_message(msg)
 
-app = Flask(__name__, static_folder='.', static_url_path='')
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
 
 # Initialize the Rate Limiter
@@ -78,6 +79,22 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"],
     storage_uri="memory://"
 )
+
+# =====================================================================
+# 🛡️ SENSITIVE FILE PROTECTION (PREVENTS .env & .git LEAKS)
+# =====================================================================
+BLOCKED_EXTENSIONS = {'.env', '.git', '.ini', '.py', '.sql', '.db', '.log', '.md'}
+
+@app.before_request
+def protect_sensitive_files():
+    from flask import abort
+    # 1. Block dotfiles and hidden directories (e.g., /.env, /.git/config)
+    if any(part.startswith('.') for part in request.path.split('/') if part):
+        abort(404)
+    
+    # 2. Block sensitive file extensions
+    if any(request.path.lower().endswith(ext) for ext in BLOCKED_EXTENSIONS):
+        abort(404)
 
 def get_db_connection():
     return pymysql.connect(
@@ -131,7 +148,7 @@ def add_security_headers(response):
 
 @app.route('/')
 def home():
-    return send_from_directory('.', 'index.html')
+    return render_template('index.html')
 
 # 1. REGISTRATION ROUTE
 @app.route('/register', methods=['POST'])
