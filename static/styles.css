@@ -231,7 +231,7 @@ nav {
 /* Subtitle utilities */
 h2 {
     font-size: 2.2rem;
-    color: var(--dark-blue);
+    color: #000000;
     margin-bottom: 0.5rem;
 }
 
@@ -270,7 +270,7 @@ h2 {
 
 .plan-card h3 {
     font-size: 1.6rem;
-    color: var(--dark-blue);
+    color: #000000;
     margin-bottom: 1rem;
 }
 
@@ -287,20 +287,25 @@ h2 {
     min-height: 50px;
 }
 
-.select-plan-btn, .upgrade-btn {
-    background-color: var(--dark-blue);
-    color: white;
+/* Pricing Grid Buttons - Matching Complete Registration / Login buttons */
+.plan-card button,
+.select-plan-btn {
+    background-color: var(--dark-blue); /* Soft light blue (#b3d3ef) */
+    color: #ffffff;
     border: none;
     width: 100%;
-    padding: 0.8rem;
-    font-weight: 600;
+    padding: 0.85rem 1.25rem;
+    font-size: 1rem;
+    font-weight: bold;
     border-radius: 6px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background-color 0.2s ease-in-out;
+    box-shadow: none;
 }
 
-.select-plan-btn:hover, .upgrade-btn:hover {
-    background-color: var(--navy-accent);
+.plan-card button:hover,
+.select-plan-btn:hover {
+    background-color: var(--navy-accent); /* Dark navy hover effect */
 }
 
 /* Forms Design */
@@ -371,18 +376,34 @@ h2 {
     box-shadow: 0 8px 20px rgba(0,0,0,0.05);
 }
 
+#dash-greeting-title {
+    font-weight: 400; /* Removes bold styling from "Great to see you, [name]!" */
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 2.5rem;
+    margin-top: 1.5rem;
+}
+
 .current-plan-box {
-    background-color: var(--cream-dark);
-    padding: 1.5rem;
-    border-radius: 8px;
-    border-left: 5px solid var(--dark-blue);
-    margin: 1.5rem 0;
+    background-color: transparent;
+    padding: 0;
+    border-left: none;
+    margin: 1rem 0 1.5rem 0;
 }
 
 .current-plan-box h3 {
-    font-size: 1.4rem;
-    color: var(--dark-blue);
-    margin-bottom: 0.4rem;
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: #000000;
+    margin-bottom: 0.35rem;
+}
+
+.current-plan-box p {
+    color: #555555;
+    font-size: 0.95rem;
 }
 
 .upgrade-zone {
@@ -395,15 +416,30 @@ h2 {
     color: #444;
 }
 
+.upgrade-zone-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+}
+
+/* Standardized Solid Plan Buttons */
 .upgrade-btn {
-    margin-bottom: 0.5rem;
-    background-color: transparent;
-    color: var(--dark-blue);
-    border: 2px solid var(--dark-blue);
+    background-color: var(--dark-blue);
+    color: white;
+    border: none;
+    padding: 0.8rem 1rem;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 0.95rem;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+    transition: background-color 0.2s ease-in-out;
 }
 
 .upgrade-btn:hover {
-    background-color: var(--dark-blue);
+    background-color: var(--navy-accent);
     color: white;
 }
 
@@ -483,6 +519,12 @@ h2 {
     border: none;
     border-radius: 6px;
     cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.btn-primary:hover {
+    background-color: var(--navy-accent);
 }
 
 /* ==========================================================================
@@ -527,7 +569,7 @@ h2 {
 }
 
 .btn-remove-card {
-    background: #e53e3e;
+    background: var(--alert-orange);
     color: white;
     border: none;
     padding: 5px 10px;
@@ -537,6 +579,11 @@ h2 {
     top: 15px;
     right: 15px;
     cursor: pointer;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.btn-remove-card:hover {
+    opacity: 0.85;
 }
 
 /* Saved Card Form Helpers */
@@ -572,7 +619,7 @@ h2 {
 }
 
 .btn-tokenize {
-    background: #3182ce;
+    background: var(--dark-blue);
     color: white;
     border: none;
     padding: 12px;
@@ -581,4 +628,51 @@ h2 {
     cursor: pointer;
     margin-top: 10px;
     width: 100%;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.btn-tokenize:hover {
+    background-color: var(--navy-accent);
+}
+
+/* ==========================================================================
+   UI NOTIFICATION BANNER
+   ========================================================================== */
+.status-banner {
+    padding: 14px 18px;
+    margin: 15px 0 20px 0; /* 15px top (away from address), 20px bottom (away from button) */
+    width: 100%;           /* Ensures it aligns flush with your input fields */
+    box-sizing: border-box;/* Prevents padding from causing overflow */
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: center;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.status-banner.hidden {
+  display: none !important;
+  opacity: 0;
+}
+
+/* Success State (Green) */
+.status-banner.success {
+  background-color: #d1e7dd;
+  color: #0f5132;
+  border: 1px solid #badbcc;
+}
+
+/* Error State (Red) */
+.status-banner.error {
+  background-color: #f8d7da;
+  color: #842029;
+  border: 1px solid #f5c2c7;
+}
+
+/* Info/MFA State (Blue) */
+.status-banner.info {
+  background-color: #cff4fc;
+  color: #055160;
+  border: 1px solid #b6effb;
 }

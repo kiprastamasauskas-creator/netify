@@ -12,16 +12,59 @@ let appState = {
 };
 
 /**
- * Handles Global Tab Switching Mechanics Safely
+ * Displays a non-blocking UI notification banner within the currently active tab/form
+ * @param {string} message - The text to display
+ * @param {string} type - 'success', 'error', or 'info'
+ * @param {HTMLElement|null} targetContainer - Optional explicit container
  */
-function switchTab(tabId) {
+function showBanner(message, type = 'info', targetContainer = null) {
+    // 50ms buffer ensures any DOM tab switches or container visibility changes finish rendering first
+    setTimeout(() => {
+        let banner = null;
+
+        // 1. Check inside an explicitly passed container
+        if (targetContainer) {
+            banner = targetContainer.querySelector('.status-banner');
+        }
+
+        // 2. Look inside the currently visible tab/form
+        if (!banner) {
+            const activeTab = document.querySelector('.tab-content.active');
+            if (activeTab) {
+                // Look for visible form/container banners first
+                const visibleSubContainer = activeTab.querySelector('form:not(.hidden) > .status-banner, div:not(.hidden) > .status-banner');
+                banner = visibleSubContainer || activeTab.querySelector('.status-banner');
+            }
+        }
+
+        // 3. Global fallback
+        if (!banner) {
+            banner = document.querySelector('.status-banner');
+        }
+
+        if (!banner) return;
+
+        // Reset styles and update content
+        banner.className = `status-banner ${type}`;
+        banner.textContent = message;
+        banner.classList.remove('hidden');
+
+        // Automatically dismiss after 5 seconds
+        setTimeout(() => {
+            banner.classList.add('hidden');
+        }, 5000);
+    }, 50);
+}
+
+
+function switchTab(tabId, pushToHistory = true) {
     // 1. Hide all tabs safely
     const tabs = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => {
         if (tab) tab.classList.remove('active');
     });
 
-    // 2. Deactivate only navbar button styling
+    // 2. Deactivate navbar button styling
     const navButtons = document.querySelectorAll('.nav-btn');
     navButtons.forEach(btn => {
         if (btn) btn.classList.remove('active');
@@ -39,6 +82,14 @@ function switchTab(tabId) {
     const activeBtn = document.querySelector(`.nav-btn[data-tab="${tabId}"]`);
     if (activeBtn) {
         activeBtn.classList.add('active');
+    }
+
+    // 💾 Save active tab to localStorage
+    localStorage.setItem('activeTab', tabId);
+
+    // 📜 Push tab change to browser history stack (for Back/Forward arrows)
+    if (pushToHistory && history.state?.tabId !== tabId) {
+        history.pushState({ tabId: tabId }, '', `#${tabId}`);
     }
 }
 
@@ -68,7 +119,7 @@ async function handleSignUp(event) {
     // Enforce valid Belgian phone numbers
     const belgianPhoneRegex = /^(?:\+32\s?|0)[1-9](?:\s?\d){7,8}$/;
     if (!belgianPhoneRegex.test(phoneInput)) {
-        alert("Registration Error: Please enter a valid Belgian phone number format (e.g., 0470 12 34 56).");
+        showBanner("Please enter a valid Belgian phone number format (e.g., 0470 12 34 56).", "error");
         return; 
     }
 
@@ -85,15 +136,15 @@ async function handleSignUp(event) {
         const result = await response.json();  
 
         if (result.status === 'success') {
-            alert(result.message);
             document.getElementById('verify-tab').classList.remove('hidden');
             switchTab('verify'); 
+            showBanner(result.message, "success");
         } else {
-            alert("Registration Failure: " + result.message);
+            showBanner("Registration Failure: " + result.message, "error");
         }   
     } catch (error) {
         console.error("Network connectivity error:", error);
-        alert("Network Error: Could not connect to the backend server.");
+        showBanner("Network Error: Could not connect to the backend server.", "error");
     }
 }
 
@@ -113,23 +164,21 @@ function handleVerify(event) {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            alert(data.message);
             verifyForm.reset();
             document.getElementById('verify-tab').classList.add('hidden');
             switchTab('login');
+            showBanner(data.message, "success");
         } else {
-            alert("Verification Failure: " + data.message);
+            showBanner("Verification Failure: " + data.message, "error");
         }
     })
     .catch(error => {
         console.error("Network connectivity error:", error);
-        alert("Network Error: Could not connect to the verification server.");
+        showBanner("Network Error: Could not connect to the verification server.", "error");
     });
 }
 
-/**
- * Real Database Customer Authentication & MFA Step
- */
+
 function handleLogin(event) {
     event.preventDefault();
 
@@ -143,16 +192,23 @@ function handleLogin(event) {
     })
     .then(response => response.json())
     .then(data => {
+        if (data.redirect) {
+            window.location.href = data.redirect; 
+            return;
+        }
+
+        // 2. Standard MFA Workflow
         if (data.status === 'mfa_required') {
             document.getElementById('login-container').classList.add('hidden');
             document.getElementById('mfa-container').classList.remove('hidden');
+            showBanner("Please enter the verification code sent to your email.", "info", document.getElementById('mfa-container'));
         } else {
-            alert("Login Failure: " + data.message);
+            showBanner("Login Failure: " + data.message, "error");
         }
     })
     .catch(error => {
         console.error("Network connectivity error:", error);
-        alert("Network Error: Could not connect to the authentication server.");
+        showBanner("Network Error: Could not connect to the authentication server.", "error");
     });
 }
 
@@ -169,13 +225,14 @@ function handleMfaVerify(event) {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            alert(data.message);
-            
             appState.userLoggedIn = true;
             appState.hasSubscription = true;
             appState.userId = data.user.id;
             appState.selectedPlanName = data.user.selected_plan || 'Basic Plan';
             appState.savedCard = data.payment;
+
+            // 💾 Store complete session payload
+            localStorage.setItem('sessionData', JSON.stringify(data));
 
             if (appState.selectedPlanName === 'Ultra Plan') {
                 appState.selectedPlanPrice = 59;
@@ -189,17 +246,21 @@ function handleMfaVerify(event) {
             renderSavedCardUI();
 
             document.getElementById('dash-plan-name').textContent = appState.selectedPlanName;
-            document.getElementById('dash-plan-status').textContent = `Welcome back, ${data.user.first_name} ${data.user.last_name}! Your internet profile is active at $${appState.selectedPlanPrice}/month.`;
+            // Set top greeting and profile status separately
+            const userFullName = `${data.user.first_name} ${data.user.last_name}`;
+            document.getElementById('dash-greeting-title').textContent = `Great to see you, ${userFullName}!`;
+            document.getElementById('dash-plan-status').textContent = `Your internet profile is active at $${appState.selectedPlanPrice}/month.`;
             
             document.getElementById('nav-dashboard').classList.remove('hidden');
             switchTab('dashboard');
+            showBanner(data.message || "Authentication successful! Welcome back.", "success");
         } else {
-            alert("Verification Failure: " + data.message);
+            showBanner("Verification Failure: " + data.message, "error");
         }
     })
     .catch(error => {
         console.error("Network connectivity error:", error);
-        alert("Network Error: Could not connect to the verification server.");
+        showBanner("Network Error: Could not connect to the verification server.", "error");
     });
 }
 
@@ -240,7 +301,7 @@ function renderDatabaseBills(bills) {
  */
 function selectDatabaseBill(element, bill) {
     if (bill.status === 'paid') {
-        alert("This invoice has already been fully paid.");
+        showBanner("This invoice has already been fully paid.", "info");
         document.getElementById('cc-payment-box').classList.add('hidden');
         return;
     }
@@ -295,7 +356,7 @@ function handlePayment(event) {
     event.preventDefault();
     
     if (!appState.selectedBillId) {
-        alert("Payment Error: No statement selected.");
+        showBanner("Payment Error: No statement selected.", "error");
         return;
     }
 
@@ -317,7 +378,7 @@ function handlePayment(event) {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            alert("Payment Approved!");
+            showBanner("Payment Approved!", "success");
             
             if (appState.activeBillElement) {
                 const statusLabel = appState.activeBillElement.querySelector('.bill-status');
@@ -330,12 +391,12 @@ function handlePayment(event) {
             appState.selectedBillId = null;
             document.getElementById('cc-payment-box').classList.add('hidden');
         } else {
-            alert("Database Payment Error: " + data.message);
+            showBanner("Database Payment Error: " + data.message, "error");
         }
     })
     .catch(error => {
         console.error(error);
-        alert("Network Error processing payment.");
+        showBanner("Network Error processing payment.", "error");
     });
 }
 
@@ -358,9 +419,9 @@ function changeExistingPlan(newName, newPrice) {
             appState.selectedPlanName = newName;
             appState.selectedPlanPrice = newPrice;
             updateDashboardUI();
-            alert(`Your plan has been updated to the ${newName}!`);
+            showBanner(`Your plan has been updated to the ${newName}!`, "success");
         } else {
-            alert("Plan update error: " + data.message);
+            showBanner("Plan update error: " + data.message, "error");
         }
     })
     .catch(() => {
@@ -368,7 +429,7 @@ function changeExistingPlan(newName, newPrice) {
         appState.selectedPlanName = newName;
         appState.selectedPlanPrice = newPrice;
         updateDashboardUI();
-        alert(`Your plan has been updated to the ${newName}!`);
+        showBanner(`Your plan has been updated to the ${newName}!`, "success");
     });
 }
 
@@ -382,7 +443,6 @@ function renderSavedCardUI() {
         document.getElementById('saved-card-num').textContent = `•••• •••• •••• ${appState.savedCard.card_last_four}`;
         document.getElementById('saved-card-exp').textContent = appState.savedCard.expiry;
     } else {
-        cardDisplay.classList.remove('hidden'); // Ensure container displays correctly
         cardDisplay.classList.add('hidden');
         formDisplay.classList.remove('hidden');
         document.getElementById('save-card-form').reset();
@@ -409,7 +469,7 @@ function handleSaveCard(event) {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            alert(data.message);
+            showBanner(data.message || "Payment card saved successfully.", "success");
             appState.savedCard = {
                 card_last_four: cardNumber.slice(-4),
                 expiry: expiry,
@@ -417,10 +477,13 @@ function handleSaveCard(event) {
             };
             renderSavedCardUI();
         } else {
-            alert("Save Error: " + data.message);
+            showBanner("Save Error: " + data.message, "error");
         }
     })
-    .catch(err => console.error("Error saving card:", err));
+    .catch(err => {
+        console.error("Error saving card:", err);
+        showBanner("Network error saving card.", "error");
+    });
 }
 
 function deleteSavedCard() {
@@ -434,14 +497,17 @@ function deleteSavedCard() {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            alert(data.message);
+            showBanner(data.message || "Saved payment card removed.", "success");
             appState.savedCard = null;
             renderSavedCardUI();
         } else {
-            alert("Deletion Error: " + data.message);
+            showBanner("Deletion Error: " + data.message, "error");
         }
     })
-    .catch(err => console.error(err));
+    .catch(err => {
+        console.error(err);
+        showBanner("Network error deleting saved card.", "error");
+    });
 }
 
 function handleProfileUpdate(event) {
@@ -459,14 +525,19 @@ function handleProfileUpdate(event) {
     .then(response => response.json())
     .then(result => {
         if (result.status === 'success') {
-            alert('Your profile has been updated successfully.');
             switchTab('dashboard');
+            showBanner('Your profile has been updated successfully.', 'success');
         } else {
-            alert('Error updating profile: ' + result.message);
+            showBanner('Error updating profile: ' + result.message, 'error');
         }
     })
-    .catch(error => console.error('Error updating profile:', error));
+    .catch(error => {
+        console.error('Error updating profile:', error);
+        showBanner('Network error updating profile.', 'error');
+    });
 }
+
+
 
 function loadAndEditProfile() {
     fetch('/api/get_profile')
@@ -482,10 +553,13 @@ function loadAndEditProfile() {
             
             switchTab('edit-profile');
         } else {
-            alert('Error loading profile data: ' + data.message);
+            showBanner('Error loading profile data: ' + data.message, 'error');
         }
     })
-    .catch(error => console.error('Error fetching profile:', error));
+    .catch(error => {
+        console.error('Error fetching profile:', error);
+        showBanner('Network error loading profile.', 'error');
+    });
 }
 
 /* ==========================================================================
@@ -528,4 +602,77 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById(id);
         if (form) form.addEventListener('submit', handler);
     });
+
+    // 💾 5. Session & Tab Restoration on Page Reload
+    const storedSession = localStorage.getItem('sessionData');
+    const hashTab = window.location.hash.replace('#', '');
+    const storedTab = hashTab || localStorage.getItem('activeTab') || 'home';
+
+    if (storedSession) {
+        try {
+            const parsedSession = JSON.parse(storedSession);
+            restoreSession(parsedSession);
+
+            switchTab(storedTab, false);
+        } catch (e) {
+            console.error("Session restore failed", e);
+            localStorage.removeItem('sessionData');
+            switchTab('home', false);
+        }
+    } else {
+        // If not logged in, prevent landing on protected tabs
+        if (storedTab === 'dashboard' || storedTab === 'edit-profile') {
+            switchTab('home', false);
+        } else {
+            switchTab(storedTab, false);
+        }
+    }
+
+    // Replace the current history state so the starting page has a valid state object
+    history.replaceState({ tabId: storedTab }, '', `#${storedTab}`);
+});
+
+/**
+ * Restores user state & dashboard UI from local storage after page reload
+ */
+function restoreSession(savedData) {
+    appState.userLoggedIn = true;
+    appState.hasSubscription = true;
+    appState.userId = savedData.user.id;
+    appState.selectedPlanName = savedData.user.selected_plan || 'Basic Plan';
+    appState.savedCard = savedData.payment;
+
+    if (appState.selectedPlanName === 'Ultra Plan') {
+        appState.selectedPlanPrice = 59;
+    } else if (appState.selectedPlanName === 'Giga Plan') {
+        appState.selectedPlanPrice = 79;
+    } else {
+        appState.selectedPlanPrice = 39;
+    }
+
+    renderDatabaseBills(savedData.bills || []);
+    renderSavedCardUI();
+
+    const userFullName = `${savedData.user.first_name} ${savedData.user.last_name}`;
+    document.getElementById('dash-greeting-title').textContent = `Great to see you, ${userFullName}!`;
+    document.getElementById('dash-plan-status').textContent = `Your internet profile is active at $${appState.selectedPlanPrice}/month.`;
+    
+    // Reveal Dashboard navigation button
+    document.getElementById('nav-dashboard').classList.remove('hidden');
+}
+
+/* ==========================================================================
+   Browser Back/Forward Button Navigation Handler
+   ========================================================================== */
+window.addEventListener('popstate', (event) => {
+    let targetTab = 'home';
+
+    if (event.state && event.state.tabId) {
+        targetTab = event.state.tabId;
+    } else if (window.location.hash) {
+        targetTab = window.location.hash.replace('#', '');
+    }
+
+    // Switch tab WITHOUT pushing duplicate state to history stack (false)
+    switchTab(targetTab, false);
 });

@@ -12,10 +12,11 @@ import secrets
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
+
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
 
-load_dotenv() # Loads variables from .env
+load_dotenv() 
 
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
@@ -23,6 +24,49 @@ SENDER_EMAIL = os.getenv("SENDER_EMAIL")
 SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
 
 COMMON_WEAK_PASSWORDS = {"password123", "123456789012", "qwertyuiop12", "admin1234567", "123456", "qwerty", "12345", "qwerty123"}
+
+
+def send_honeypot_email(attempted_email, attempted_pass, ip_address, user_agent):
+    """Sends an immediate security alert to the admin email defined in .env"""
+    try:
+        msg = EmailMessage()
+        msg.set_content(
+            f"🚨 SECURITY ALERT: Honeypot Triggered!\n\n"
+            f"An unauthorized attempt was detected using decoy credentials.\n\n"
+            f"• Attempted User/Email: {attempted_email}\n"
+            f"• Attempted Password: {attempted_pass}\n"
+            f"• Attacker IP Address: {ip_address}\n"
+            f"• User Agent: {user_agent}\n"
+            f"• Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        )
+        msg['Subject'] = "🚨 [NETIFY SECURITY] "
+        msg['From'] = SENDER_EMAIL
+        msg['To'] = SENDER_EMAIL  
+
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SENDER_EMAIL, SENDER_PASSWORD)
+            server.send_message(msg)
+            
+        print(f"📧 [Security Alert Sent] Honeypot trigger notification sent to {SENDER_EMAIL}")
+    except Exception as e:
+        print(f"❌ Failed to send honeypot security email: {e}")
+
+def log_honeypot_event(attempted_email, attempted_pass, ip_address, user_agent):
+    """Inserts honeypot security incidents into waifi_db.security_logs"""
+    try:
+        connection = get_db_connection()
+        with connection.cursor() as cursor:
+            query = """
+                INSERT INTO security_logs (event_type, attempted_email, attempted_password, ip_address, user_agent)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+            cursor.execute(query, ('HONEYPOT_TRIGGERED', attempted_email, attempted_pass, ip_address, user_agent))
+        connection.commit()
+        connection.close()
+        print(f"💾 [DB Logged] Honeypot incident recorded from IP {ip_address}")
+    except Exception as e:
+        print(f"❌ Failed to record honeypot incident to DB: {e}")
 
 #password validation function
 def validate_password(password: str, username: str = "") -> tuple[bool, str]:
@@ -238,13 +282,13 @@ def verify_registration():
         print(f"\n❌ VERIFICATION ERROR: {e}\n")
         return jsonify({"status": "error", "message": f"Database error: {str(e)}"}), 400   
 
-#login route
+# login route
 @app.route('/login', methods=['POST'])
 @limiter.limit("5 per minute")
 def login():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
+    data = request.get_json() or {}
+    email = (data.get('email') or "").strip()
+    password = data.get('password') or ""
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -252,30 +296,41 @@ def login():
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
 
-        #forces account creation verification before logging in
-        if not user['is_verified']:
-            return "Please verify your email address before logging in.", 403
+        if user and user.get('is_honeypot'):
+            client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+            user_agent = request.headers.get('User-Agent', 'Unknown')
 
-        # Validate credentials using password_hash
+            log_honeypot_event(email, password, client_ip, user_agent)
+            send_honeypot_email(email, password, client_ip, user_agent)
+
+            session['is_honeypot_user'] = True
+            session['fake_user_id'] = user['id']
+            session['fake_user_name'] = user.get('first_name', 'Admin')
+
+            return jsonify({
+                'status': 'success', 
+                'message': 'Login successful.',
+                'redirect': '/admin-dashboard'
+            }), 200
+
+        if user and not user.get('is_verified'):
+            return jsonify({'status': 'error', 'message': 'Please verify your email address before logging in.'}), 403
+
         if user and check_password_hash(user['password_hash'], password):
-            mfa_code = str(secrets.randbelow(900000) + 100000)
-            mfa_expiry = datetime.now() + timedelta(minutes=5)
-
-            cursor.execute(
-                "UPDATE users SET mfa_code = %s, mfa_expiry = %s WHERE id = %s", 
-                (mfa_code, mfa_expiry, user['id'])
-            )
-            conn.commit()
-
-            send_mfa_email(user['email'], mfa_code)
-            session['temp_user_id'] = user['id']  # Track user temporarily for MFA check
-
             return jsonify({'status': 'mfa_required', 'message': 'Verification code sent to email.'})
         
-        return jsonify({'status': 'error', 'message': 'Invalid email or password.'})
+        return jsonify({'status': 'error', 'message': 'Invalid email or password.'}), 401
+        
     finally:
         cursor.close()
         conn.close()
+
+@app.route('/admin-dashboard')
+def fake_dashboard():
+    if not session.get('is_honeypot_user'):
+        return redirect(url_for('home'))
+
+    return render_template('fake_dashboard.html', user_name=session.get('fake_user_name', 'Admin'))
 
 #MFA Route
 @app.route('/verify-mfa', methods=['POST'])
