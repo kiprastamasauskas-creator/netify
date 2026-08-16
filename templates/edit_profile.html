@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netify - Edit Profile</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <header>
+      <div class="logo-container">
+        <img src="/static/netify2.png" alt="Netify Logo" class="nav-logo">
+      </div>
+      <nav>
+        <a href="{{ url_for('dashboard') }}" class="nav-btn">DASHBOARD</a>
+        <a href="{{ url_for('edit_profile_page') }}" class="nav-btn active">EDIT PROFILE</a>
+      </nav>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="content-container">
+        <section class="tab-content active">
+            
+            <!-- Profile Edit Card using the shared .form-card class -->
+            <div class="form-card">
+                <h2>Update Your Information</h2>
+                <p class="subtitle">Modify your contact details and GDPR preferences below.</p>
+
+                <!-- Status Banner -->
+                <div class="status-banner hidden"></div>
+
+                <!-- The ID here is crucial for your script.js handleProfileUpdate function -->
+                <form id="editProfileForm">
+                    <div class="form-group">
+                        <label class="form-label-styled" for="first_name">First Name</label>
+                        <input type="text" id="first_name" name="first_name" class="form-input-styled" value="{{ user.first_name }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label-styled" for="last_name">Last Name</label>
+                        <input type="text" id="last_name" name="last_name" class="form-input-styled" value="{{ user.last_name }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label-styled" for="email">Email Address</label>
+                        <input type="email" id="email" name="email" class="form-input-styled" value="{{ user.email }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label-styled" for="phone_number">Phone Number</label>
+                        <input type="text" id="phone_number" name="phone_number" class="form-input-styled" value="{{ user.phone_number }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label-styled" for="date_of_birth">Date of Birth</label>
+                        <input type="date" id="date_of_birth" name="date_of_birth" class="form-input-styled" value="{{ user.date_of_birth }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label-styled" for="street_address">Street Address</label>
+                        <input type="text" id="street_address" name="street_address" class="form-input-styled" value="{{ user.street_address }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label-styled" for="password">New Password</label>
+                        <input type="password" id="password" name="password" class="form-input-styled" placeholder="Leave blank to keep current password">
+                    </div>
+
+                    <div class="form-row" style="margin-top: 1.5rem;">
+                        <button type="submit" class="submit-btn btn-primary" style="margin-top: 0;">Save Changes</button>
+                        <a href="{{ url_for('dashboard') }}" class="submit-btn" style="background-color: #6c757d; margin-top: 0;">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

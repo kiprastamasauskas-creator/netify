@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netify - Dashboard</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <header>
+      <div class="logo-container">
+        <img src="/static/netify2.png" alt="WAI-FI Logo" class="nav-logo">
+      </div>
+      <nav>
+        <a href="{{ url_for('dashboard') }}" class="nav-btn active">DASHBOARD</a>
+        <button id="btn-logout" class="nav-btn logout-nav-btn">LOG OUT</button>
+      </nav>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="content-container">
+        <section class="tab-content active">
+            
+            <!-- Top Dashboard Header (Now just the greeting!) -->
+            <div class="dashboard-header-bar">
+                <h1 id="dash-greeting-title">Great to see you!</h1>
+            </div>
+
+            <!-- Dashboard Banner -->
+            <div class="status-banner hidden"></div>
+
+            <div class="dashboard-grid">
+                
+                <!-- Card 1: Plan Management -->
+                <div class="dash-card">
+                    <h2>Your Current Plan</h2>
+                    <div class="current-plan-box">
+                        <h3 id="dash-plan-name">No Active Subscription</h3>
+                        <p id="dash-plan-status">Please select a subscription plan under Create Account.</p>
+                    </div>
+                    
+                    <div class="upgrade-zone">
+                        <p class="form-label-styled">Need a change? Available Plans:</p>
+                        <div class="upgrade-zone-buttons">
+                            <button class="upgrade-btn" id="switch-basic-btn">Switch to Basic ($39/mo)</button>
+                            <button class="upgrade-btn" id="switch-ultra-btn">Switch to Ultra ($59/mo)</button>
+                            <button class="upgrade-btn" id="switch-giga-btn">Switch to Giga ($79/mo)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: SAVED PAYMENT METHOD -->
+                <div class="dash-card">
+                    <h2>Saved Payment Method</h2>
+                    <p class="text-muted">Your payment information will be securely stored.</p>
+
+                    <div id="saved-card-display" class="saved-card-box hidden">
+                        <div class="saved-card-brand">Waifi Secure Pay</div>
+                        <div id="saved-card-num" class="saved-card-number">•••• •••• •••• 0000</div>
+                        <div class="saved-card-footer">
+                            <span>Cardholder: Kipras</span>
+                            <span>Exp: <span id="saved-card-exp">--/--</span></span>
+                        </div>
+                        <button class="btn-remove-card" id="remove-card-btn">Remove</button>
+                    </div>
+
+                    <div id="no-saved-card-display">
+                        <form id="save-card-form">
+                            <div class="form-flex-column">
+                                <div>
+                                    <label class="form-label-styled">Card Number</label>
+                                    <input type="text" id="save-card-num-input" placeholder="4000 1234 5678 9010" required class="form-input-styled">
+                                </div>
+                                <div class="form-flex-row">
+                                    <div class="flex-fill">
+                                        <label class="form-label-styled">Expiry</label>
+                                        <input type="text" id="save-card-exp-input" placeholder="MM/YY" required class="form-input-styled">
+                                    </div>
+                                    <div class="flex-fill">
+                                        <label class="form-label-styled">CVC</label>
+                                        <input type="text" id="save-card-cvc-input" placeholder="123" required class="form-input-styled">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn-tokenize">Save Card</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Card 3: Bills & Payments -->
+                <div class="dash-card">
+                    <h2>Bills & Invoices</h2>
+                    <p class="subtitle">Select a bill to process credit card payment</p>
+                    
+                    <ul class="bill-list" id="dash-bill-list"></ul>
+
+                    <div id="cc-payment-box" class="cc-box hidden">
+                        <h3 id="payment-target">Paying for: July 2026 Statement</h3>
+                        <form id="payment-form">
+                            <div class="form-group">
+                                <label for="card-num">Card Number</label>
+                                <input type="text" id="card-num" placeholder="1234 5678 1234 5678" required maxlength="19">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="card-exp">Expiry</label>
+                                    <input type="text" id="card-exp" placeholder="MM/YY" required maxlength="5">
+                                </div>
+                                <div class="form-group">
+                                    <label for="card-cvc">CVC</label>
+                                    <input type="text" id="card-cvc" placeholder="123" required maxlength="4">
+                                </div>
+                            </div>
+                            <button type="submit" class="submit-btn payment-btn">Pay Bill Now</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Settings & Privacy Card -->
+                <div class="dash-card">
+                    <h2>Settings & Privacy</h2>
+                    <p class="subtitle">Manage your personal data and GDPR preferences.</p>
+                    <a href="{{ url_for('edit_profile_page') }}" class="btn-primary">Edit Personal Data</a>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

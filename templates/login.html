@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netify - Log In</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <header>
+      <div class="logo-container">
+        <img src="/static/netify2.png" alt="WAI-FI Logo" class="nav-logo">
+      </div>
+      <nav>
+        <a href="{{ url_for('home') }}" class="nav-btn">HOME</a>
+        <a href="{{ url_for('register') }}" class="nav-btn">CREATE ACCOUNT</a>
+        <a href="{{ url_for('login') }}" class="nav-btn active">LOG IN</a>
+      </nav>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="content-container">
+        <section class="tab-content active">
+            <div class="form-card">
+                
+                <div id="login-container">
+                    <h2>Log In</h2>
+                    <p class="subtitle">Access your portal to view plans and bills</p>
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="login-email">Email Address</label>
+                            <input type="email" id="login-email" name="login-email" required placeholder="name@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Password</label>
+                            <input type="password" id="login-password" name="login-password" required placeholder="••••••••">
+                        </div>
+
+                        <!-- Login Banner -->
+                        <div class="status-banner hidden"></div>
+
+                        <button type="submit" class="submit-btn">Log In</button>
+                    </form>
+                </div>
+
+                <div id="mfa-container" class="hidden">
+                    <h2>Security Verification</h2>
+                    <p class="subtitle">Enter the 6-digit code sent to your email</p>
+                    <form id="mfa-form">
+                        <div class="form-group">
+                            <label for="mfa-code">Verification Code</label>
+                            <input type="text" id="mfa-code" name="mfa-code" required placeholder="123456" maxlength="6">
+                        </div>
+
+                        <!-- MFA Banner -->
+                        <div class="status-banner hidden"></div>
+
+                        <button type="submit" class="submit-btn">Verify Code</button>
+                    </form>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

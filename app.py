@@ -16,6 +16,11 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
 
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30) # Enforce a 30-minute idle timeout
+app.config['SESSION_COOKIE_SECURE'] = True      # Only send cookies over HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True    # Block JavaScript from reading the session cookie (XSS protection)
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'   # Prevent Cross-Site Request Forgery (CSRF)
+
 load_dotenv() 
 
 SMTP_SERVER = "smtp.gmail.com"
@@ -125,20 +130,25 @@ limiter = Limiter(
 )
 
 # =====================================================================
-# 🛡️ SENSITIVE FILE PROTECTION (PREVENTS .env & .git LEAKS)
+# 🛡️ SENSITIVE FILE PROTECTION 
 # =====================================================================
 BLOCKED_EXTENSIONS = {'.env', '.git', '.ini', '.py', '.sql', '.db', '.log', '.md'}
 
 @app.before_request
 def protect_sensitive_files():
     from flask import abort
-    # 1. Block dotfiles and hidden directories (e.g., /.env, /.git/config)
+    # 1. Block dotfiles and hidden directories 
     if any(part.startswith('.') for part in request.path.split('/') if part):
         abort(404)
     
     # 2. Block sensitive file extensions
     if any(request.path.lower().endswith(ext) for ext in BLOCKED_EXTENSIONS):
         abort(404)
+
+@app.before_request
+def make_session_permanent():
+    # This ensures the 30-minute rolling timeout applies to all requests
+    session.permanent = True
 
 def get_db_connection():
     return pymysql.connect(
@@ -188,6 +198,11 @@ def add_security_headers(response):
     # Mask application server signature
     response.headers["Server"] = "Netify Server"
 
+    # 🛑 NEW: Prevent browser caching to fix the "back button" logout issue
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+
     return response
 
 @app.route('/')
@@ -195,8 +210,11 @@ def home():
     return render_template('index.html')
 
 # 1. REGISTRATION ROUTE
-@app.route('/register', methods=['POST'])
+@app.route('/register', methods=['GET', 'POST'])
 def register():
+    # If the user is just loading the page, show them the HTML
+    if request.method == 'GET':
+        return render_template('register.html')
     first_name = request.form.get('reg-fname')
     last_name = request.form.get('reg-lname')
     dob = request.form.get('reg-dob')
@@ -234,14 +252,22 @@ def register():
         send_mfa_email(email, f"Your verification code is: {otp_code}")
         session['pending_verification_email'] = email
 
-        return jsonify({"status": "success", "message": "A verification code has been sent to your email. Please enter it.", "redirect": url_for('verify_registration')}), 201
+        return jsonify({
+            "status": "success", 
+            "message": "A verification code has been sent to your email. Please enter it."
+        }), 201
     except Exception as e:
         print(f"\n❌ DATABASE REGISTRATION ERROR: {e}\n")
         return jsonify({"status": "error", "message": f"Database error: {str(e)}"}), 400
     
 #account creation verification
-@app.route('/verify-registration', methods=['POST'])
+@app.route('/verify-registration', methods=['GET', 'POST'])
 def verify_registration():
+    if request.method == 'GET':
+        # Security check: ensure they actually registered first
+        if 'pending_verification_email' not in session:
+            return redirect(url_for('register'))
+        return render_template('verify_registration.html')
     otp_input = request.form.get('otp_code')
     email = session.get('pending_verification_email')
 
@@ -283,9 +309,12 @@ def verify_registration():
         return jsonify({"status": "error", "message": f"Database error: {str(e)}"}), 400   
 
 # login route
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("5 per minute")
 def login():
+    # If the user is just loading the page, show them the HTML
+    if request.method == 'GET':
+        return render_template('login.html')
     data = request.get_json() or {}
     email = (data.get('email') or "").strip()
     password = data.get('password') or ""
@@ -317,6 +346,21 @@ def login():
             return jsonify({'status': 'error', 'message': 'Please verify your email address before logging in.'}), 403
 
         if user and check_password_hash(user['password_hash'], password):
+            # 1. Generate a secure 6-digit code
+            mfa_code = str(secrets.randbelow(900000) + 100000)
+            mfa_expiry = datetime.now() + timedelta(minutes=5)
+            
+            cursor.execute("""
+                UPDATE users 
+                SET mfa_code = %s, mfa_expiry = %s 
+                WHERE id = %s
+            """, (mfa_code, mfa_expiry, user['id']))
+            conn.commit()
+
+            session['temp_user_id'] = user['id']
+
+            send_mfa_email(email, mfa_code)
+
             return jsonify({'status': 'mfa_required', 'message': 'Verification code sent to email.'})
         
         return jsonify({'status': 'error', 'message': 'Invalid email or password.'}), 401
@@ -324,6 +368,12 @@ def login():
     finally:
         cursor.close()
         conn.close()
+
+@app.route('/api/logout', methods=['POST'])
+def logout_user():
+    """Completely wipes the Flask session from the server side."""
+    session.clear()
+    return jsonify({"status": "success", "message": "Server session destroyed."}), 200
 
 @app.route('/admin-dashboard')
 def fake_dashboard():
@@ -500,29 +550,47 @@ def update_profile():
     user_id = session['user_id']
     data = request.json
     
-    # Use your established connection function
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
+    dob = data.get('date_of_birth')
+    email = data.get('email')
+    phone = data.get('phone_number')
+    address = data.get('street_address')
+    new_password = data.get('password')
+    
     connection = get_db_connection()
     cursor = connection.cursor()
     
     try:
+        # Fetch current user date of birth as a standard tuple/row
+        cursor.execute("SELECT date_of_birth FROM users WHERE id = %s", (user_id,))
+        current_user = cursor.fetchone()
+        
+        # Fallback to existing database value if submitted dob is empty
+        if not dob or dob.strip() == '':
+            dob = current_user[0] if current_user else None
+
+        # Update standard profile fields
         query = """
             UPDATE users 
             SET first_name = %s, last_name = %s, date_of_birth = %s, email = %s, phone_number = %s, street_address = %s 
             WHERE id = %s
         """
-        values = (
-            data['first_name'], data['last_name'], data['dob'], 
-            data['email'], data['phone'], data['address'], user_id
-        )
-        cursor.execute(query, values)
+        cursor.execute(query, (first_name, last_name, dob, email, phone, address, user_id))
         
-        if data.get('password') and data['password'].strip() != '':
-            hashed_pw = generate_password_hash(data['password'], method='scrypt')
+        # Safely validate and update password if provided
+        if new_password and new_password.strip() != '':
+            is_valid, error_message = validate_password(new_password, username=email)
+            if not is_valid:
+                connection.rollback()
+                return jsonify({"status": "error", "message": error_message}), 400
+                
+            hashed_pw = generate_password_hash(new_password, method='scrypt')
             pw_query = "UPDATE users SET password_hash = %s WHERE id = %s"
             cursor.execute(pw_query, (hashed_pw, user_id))
             
         connection.commit()
-        return jsonify({'status': 'success', 'message': 'Profile updated.'})
+        return jsonify({'status': 'success', 'message': 'Profile updated successfully.'})
         
     except Exception as e:
         connection.rollback()
@@ -568,6 +636,35 @@ def get_profile():
     finally:
         cursor.close()
         connection.close()
+
+# ---------------------------------------------------------
+# NEW HTML VIEW ROUTES
+# ---------------------------------------------------------
+
+@app.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        # Pass a query string parameter like ?expired=1
+        return redirect(url_for('login', expired=1))
+    return render_template('dashboard.html')
+
+@app.route('/edit-profile')
+def edit_profile_page():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    # Fetch the logged-in user's data
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT * FROM users WHERE id = %s", (session['user_id'],))
+        user_data = cursor.fetchone()
+    finally:
+        cursor.close()
+        connection.close()
+
+    # Pass the user data into the HTML template
+    return render_template('edit_profile.html', user=user_data)
 
 if __name__ == '__main__':
     is_debug = os.getenv("FLASK_DEBUG", "False").lower() in ("true", "1")

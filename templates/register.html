@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netify - Create Account</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <header>
+      <div class="logo-container">
+        <img src="/static/netify2.png" alt="WAI-FI Logo" class="nav-logo">
+      </div>
+      <nav>
+        <a href="{{ url_for('home') }}" class="nav-btn">HOME</a>
+        <a href="{{ url_for('register') }}" class="nav-btn active">CREATE ACCOUNT</a>
+        <a href="{{ url_for('login') }}" class="nav-btn">LOG IN</a>
+      </nav>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="content-container">
+        <section class="tab-content active">
+            <h2>Create an Account</h2>
+            <p class="subtitle">Purchase a subscription online to get started</p>
+            
+            <div class="pricing-container">
+                <!-- Plan 1 -->
+                <div class="plan-card">
+                    <h3>Basic Plan</h3>
+                    <div class="price">$39/mo</div>
+                    <p>Perfect for browsing and light streaming. Up to 100 Mbps.</p>
+                    <button class="plan-btn" data-plan-name="Basic Plan" data-plan-price="39">Choose Basic</button>
+                </div>
+                <!-- Plan 2 -->
+                <div class="plan-card featured">
+                    <h3>Ultra Plan</h3>
+                    <div class="price">$59/mo</div>
+                    <p>Best for families and gaming. Up to 500 Mbps.</p>
+                    <button class="plan-btn" data-plan-name="Ultra Plan" data-plan-price="59">Choose Ultra</button>
+                </div>
+                <!-- Plan 3 -->
+                <div class="plan-card">
+                    <h3>Giga Plan</h3>
+                    <div class="price">$79/mo</div>
+                    <p>Maximum speed for heavy users. Up to 1 Gbps.</p>
+                    <button class="plan-btn" data-plan-name="Giga Plan" data-plan-price="79">Choose Giga</button>
+                </div>
+            </div>
+
+            <!-- Sign Up Form -->
+            <form id="signup-form" class="form-card hidden">
+                <h3 id="selected-plan-title">Signing up for: Basic Plan</h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="reg-fname">First Name</label>
+                        <input type="text" id="reg-fname" name="reg-fname" required placeholder="John">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-lname">Last Name</label>
+                        <input type="text" id="reg-lname" name="reg-lname" required placeholder="Doe">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="reg-dob">Date of Birth</label>
+                    <input type="date" id="reg-dob" name="reg-dob" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="reg-email">Email Address</label>
+                    <input type="email" id="reg-email" name="reg-email" required placeholder="name@example.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="reg-phone">Phone Number</label>
+                    <input type="tel" id="reg-phone" name="reg-phone" required placeholder="+32 470 12 34 56">
+                </div>
+
+                <div class="form-group">
+                    <label for="reg-password">Password</label>
+                    <input type="password" id="reg-password" name="reg-password" required placeholder="••••••••" minlength="8">
+                </div>
+
+                <div class="form-group">
+                    <label for="reg-address">Street Address</label>
+                    <input type="text" id="reg-address" name="reg-address" required placeholder="e.g., Rue de la Loi 16, 1000 Bruxelles">
+                </div>
+
+                <!-- Registration Banner -->
+                <div class="status-banner hidden"></div>
+                
+                <button type="submit" class="submit-btn">Complete Registration</button>
+            </form>
+
+            <!-- Verification Sub-section (Appears after signup) -->
+            <div id="verify-section" class="hidden" style="margin-top: 2rem;">
+                <form id="verify-form" class="form-card">
+                    <h2>Verify Your Email</h2>
+                    <div class="form-group">
+                        <label for="otp_code">Enter the 6-digit code sent to your email:</label>
+                        <input type="text" id="otp_code" name="otp_code" maxlength="6" required placeholder="123456">
+                    </div>
+                    
+                    <div class="status-banner hidden"></div>
+                    <button type="submit" class="submit-btn">Verify Account</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

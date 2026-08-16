@@ -10,6 +10,11 @@
     --alert-orange: #e76f51;
 }
 
+/* Ensure all anchor tags used as buttons never show text underlines */
+a {
+    text-decoration: none;
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -68,6 +73,7 @@ nav {
     cursor: pointer;
     border-radius: 4px;
     transition: all 0.3s;
+    text-decoration: none; /* Removes the underline */
 }
 
 .nav-btn:hover, .nav-btn.active {
@@ -355,6 +361,11 @@ h2 {
     border-radius: 6px;
     cursor: pointer;
     margin-top: 1rem;
+    display: flex;              /* Makes it a flex container */
+    align-items: center;        /* Centers vertically */
+    justify-content: center;    /* Centers horizontally */
+    text-decoration: none;      /* Ensures no underline */
+    box-sizing: border-box;     /* Keeps padding consistent */
 }
 
 .submit-btn:hover {
@@ -675,4 +686,67 @@ h2 {
   background-color: #cff4fc;
   color: #055160;
   border: 1px solid #b6effb;
+}
+
+/* ==========================================================================
+   Dashboard Header Alignment
+   ========================================================================== */
+.dashboard-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.dashboard-header-bar h1 {
+    margin-bottom: 0; /* Prevents the text from pushing the flexbox out of whack */
+}
+
+/* ==========================================================================
+   Logout Button Specific Styling
+   ========================================================================== */
+#btn-logout {
+    background-color: #dc3545; 
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    
+    /* Simplified Layout Logic (Flexbox handles the rest) */
+    width: fit-content;
+    margin: 0; /* Removes any stray margins so it aligns perfectly with the text */
+    
+    transition: background-color 0.2s ease-in-out;
+}
+
+#btn-logout:hover {
+    background-color: #b02a37; 
+}
+
+/* ==========================================================================
+   Anchor Tags formatted as buttons
+   ========================================================================== */
+a.btn-primary {
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    box-sizing: border-box; /* Ensures padding doesn't mess up width */
+}
+
+/* ==========================================================================
+   Header Logout Button Styling
+   ========================================================================== */
+.logout-nav-btn {
+    border: 2px solid transparent;
+    color: var(--text-light);
+    cursor: pointer;
+}
+
+.logout-nav-btn:hover {
+    background-color: #dc3545; /* Clean red background on hover */
+    color: white;
+    border-color: #dc3545;
 }

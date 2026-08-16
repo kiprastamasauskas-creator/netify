@@ -13,84 +13,29 @@ let appState = {
 
 /**
  * Displays a non-blocking UI notification banner within the currently active tab/form
- * @param {string} message - The text to display
- * @param {string} type - 'success', 'error', or 'info'
- * @param {HTMLElement|null} targetContainer - Optional explicit container
  */
 function showBanner(message, type = 'info', targetContainer = null) {
-    // 50ms buffer ensures any DOM tab switches or container visibility changes finish rendering first
     setTimeout(() => {
         let banner = null;
 
-        // 1. Check inside an explicitly passed container
         if (targetContainer) {
             banner = targetContainer.querySelector('.status-banner');
         }
 
-        // 2. Look inside the currently visible tab/form
-        if (!banner) {
-            const activeTab = document.querySelector('.tab-content.active');
-            if (activeTab) {
-                // Look for visible form/container banners first
-                const visibleSubContainer = activeTab.querySelector('form:not(.hidden) > .status-banner, div:not(.hidden) > .status-banner');
-                banner = visibleSubContainer || activeTab.querySelector('.status-banner');
-            }
-        }
-
-        // 3. Global fallback
         if (!banner) {
             banner = document.querySelector('.status-banner');
         }
 
         if (!banner) return;
 
-        // Reset styles and update content
         banner.className = `status-banner ${type}`;
         banner.textContent = message;
         banner.classList.remove('hidden');
 
-        // Automatically dismiss after 5 seconds
         setTimeout(() => {
             banner.classList.add('hidden');
         }, 5000);
     }, 50);
-}
-
-
-function switchTab(tabId, pushToHistory = true) {
-    // 1. Hide all tabs safely
-    const tabs = document.querySelectorAll('.tab-content');
-    tabs.forEach(tab => {
-        if (tab) tab.classList.remove('active');
-    });
-
-    // 2. Deactivate navbar button styling
-    const navButtons = document.querySelectorAll('.nav-btn');
-    navButtons.forEach(btn => {
-        if (btn) btn.classList.remove('active');
-    });
-
-    // 3. Reveal the selected tab
-    const targetTab = document.getElementById(`${tabId}-tab`);
-    if (targetTab) {
-        targetTab.classList.add('active');
-    } else {
-        console.error(`Layout Error: Could not find HTML element with ID: "${tabId}-tab"`);
-    }
-
-    // 4. Highlight active button matching data-tab attribute
-    const activeBtn = document.querySelector(`.nav-btn[data-tab="${tabId}"]`);
-    if (activeBtn) {
-        activeBtn.classList.add('active');
-    }
-
-    // 💾 Save active tab to localStorage
-    localStorage.setItem('activeTab', tabId);
-
-    // 📜 Push tab change to browser history stack (for Back/Forward arrows)
-    if (pushToHistory && history.state?.tabId !== tabId) {
-        history.pushState({ tabId: tabId }, '', `#${tabId}`);
-    }
 }
 
 /**
@@ -103,9 +48,11 @@ function selectPlan(planName, price) {
     const formTitle = document.getElementById('selected-plan-title');
     const signupForm = document.getElementById('signup-form');
 
-    formTitle.textContent = `Signing up for: ${planName} ($${price}/mo)`;
-    signupForm.classList.remove('hidden');
-    signupForm.scrollIntoView({ behavior: 'smooth' });
+    if(formTitle) formTitle.textContent = `Signing up for: ${planName} ($${price}/mo)`;
+    if(signupForm) {
+        signupForm.classList.remove('hidden');
+        signupForm.scrollIntoView({ behavior: 'smooth' });
+    }
 }
 
 /**
@@ -115,9 +62,8 @@ async function handleSignUp(event) {
     event.preventDefault();
 
     const phoneInput = document.getElementById('reg-phone').value.trim();
-
-    // Enforce valid Belgian phone numbers
     const belgianPhoneRegex = /^(?:\+32\s?|0)[1-9](?:\s?\d){7,8}$/;
+    
     if (!belgianPhoneRegex.test(phoneInput)) {
         showBanner("Please enter a valid Belgian phone number format (e.g., 0470 12 34 56).", "error");
         return; 
@@ -133,11 +79,33 @@ async function handleSignUp(event) {
             body: formData
         });
         
+        // This handles the server returning a 400 or 500 error before parsing JSON
+        if (!response.ok && response.status !== 400 && response.status !== 201) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const result = await response.json();  
 
         if (result.status === 'success') {
-            document.getElementById('verify-tab').classList.remove('hidden');
-            switchTab('verify'); 
+            // 1. Hide signup form
+            signupForm.classList.add('hidden');
+            
+            // 2. Hide the main title, subtitle, and pricing cards to clean up the UI
+            const mainTitle = document.querySelector('.tab-content > h2');
+            const subtitle = document.querySelector('.subtitle');
+            const pricingContainer = document.querySelector('.pricing-container');
+            
+            if (mainTitle) mainTitle.classList.add('hidden');
+            if (subtitle) subtitle.classList.add('hidden');
+            if (pricingContainer) pricingContainer.classList.add('hidden');
+            
+            // 3. Show verification form
+            const verifySection = document.getElementById('verify-section');
+            if(verifySection) {
+                verifySection.classList.remove('hidden');
+            }
+            
+            // 4. Show the success banner
             showBanner(result.message, "success");
         } else {
             showBanner("Registration Failure: " + result.message, "error");
@@ -165,9 +133,8 @@ function handleVerify(event) {
     .then(data => {
         if (data.status === 'success') {
             verifyForm.reset();
-            document.getElementById('verify-tab').classList.add('hidden');
-            switchTab('login');
-            showBanner(data.message, "success");
+            // Redirect to login page upon successful verification with message flag
+            window.location.href = '/login?msg=registered'; 
         } else {
             showBanner("Verification Failure: " + data.message, "error");
         }
@@ -177,7 +144,6 @@ function handleVerify(event) {
         showBanner("Network Error: Could not connect to the verification server.", "error");
     });
 }
-
 
 function handleLogin(event) {
     event.preventDefault();
@@ -193,11 +159,12 @@ function handleLogin(event) {
     .then(response => response.json())
     .then(data => {
         if (data.redirect) {
-            window.location.href = data.redirect; 
+            // Append the msg parameter to whatever URL the backend provides
+            const separator = data.redirect.includes('?') ? '&' : '?';
+            window.location.href = data.redirect + separator + 'msg=login_success'; 
             return;
         }
 
-        // 2. Standard MFA Workflow
         if (data.status === 'mfa_required') {
             document.getElementById('login-container').classList.add('hidden');
             document.getElementById('mfa-container').classList.remove('hidden');
@@ -225,35 +192,9 @@ function handleMfaVerify(event) {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            appState.userLoggedIn = true;
-            appState.hasSubscription = true;
-            appState.userId = data.user.id;
-            appState.selectedPlanName = data.user.selected_plan || 'Basic Plan';
-            appState.savedCard = data.payment;
-
-            // 💾 Store complete session payload
             localStorage.setItem('sessionData', JSON.stringify(data));
-
-            if (appState.selectedPlanName === 'Ultra Plan') {
-                appState.selectedPlanPrice = 59;
-            } else if (appState.selectedPlanName === 'Giga Plan') {
-                appState.selectedPlanPrice = 79;
-            } else {
-                appState.selectedPlanPrice = 39;
-            }
-
-            renderDatabaseBills(data.bills || []);
-            renderSavedCardUI();
-
-            document.getElementById('dash-plan-name').textContent = appState.selectedPlanName;
-            // Set top greeting and profile status separately
-            const userFullName = `${data.user.first_name} ${data.user.last_name}`;
-            document.getElementById('dash-greeting-title').textContent = `Great to see you, ${userFullName}!`;
-            document.getElementById('dash-plan-status').textContent = `Your internet profile is active at $${appState.selectedPlanPrice}/month.`;
-            
-            document.getElementById('nav-dashboard').classList.remove('hidden');
-            switchTab('dashboard');
-            showBanner(data.message || "Authentication successful! Welcome back.", "success");
+            // Redirect to dashboard on successful MFA with message flag
+            window.location.href = '/dashboard?msg=login_success'; 
         } else {
             showBanner("Verification Failure: " + data.message, "error");
         }
@@ -269,6 +210,8 @@ function handleMfaVerify(event) {
  */
 function renderDatabaseBills(bills) {
     const billListContainer = document.getElementById('dash-bill-list');
+    if (!billListContainer) return; // Prevent errors if not on dashboard
+    
     billListContainer.innerHTML = ''; 
 
     if (!bills || bills.length === 0) {
@@ -327,21 +270,17 @@ function selectDatabaseBill(element, bill) {
         cardNum.value = `•••• •••• •••• ${appState.savedCard.card_last_four}`;
         cardExp.value = appState.savedCard.expiry;
         cardCvc.value = '•••';
-        
         cardNum.disabled = true;
         cardExp.disabled = true;
         cardCvc.disabled = true;
-        
         appState.useToken = true;
     } else {
         cardNum.value = '';
         cardExp.value = '';
         cardCvc.value = '';
-        
         cardNum.disabled = false;
         cardExp.disabled = false;
         cardCvc.disabled = false;
-        
         appState.useToken = false;
     }
 
@@ -401,7 +340,8 @@ function handlePayment(event) {
 }
 
 function updateDashboardUI() {
-    document.getElementById('dash-plan-name').textContent = appState.selectedPlanName;
+    const planNameEl = document.getElementById('dash-plan-name');
+    if (planNameEl) planNameEl.textContent = appState.selectedPlanName;
 }
 
 /**
@@ -425,17 +365,15 @@ function changeExistingPlan(newName, newPrice) {
         }
     })
     .catch(() => {
-        // Fallback for standalone frontend testing
-        appState.selectedPlanName = newName;
-        appState.selectedPlanPrice = newPrice;
-        updateDashboardUI();
-        showBanner(`Your plan has been updated to the ${newName}!`, "success");
+        showBanner("Network error updating plan.", "error");
     });
 }
 
 function renderSavedCardUI() {
     const cardDisplay = document.getElementById('saved-card-display');
     const formDisplay = document.getElementById('no-saved-card-display');
+    
+    if (!cardDisplay || !formDisplay) return;
 
     if (appState.savedCard) {
         cardDisplay.classList.remove('hidden');
@@ -525,8 +463,8 @@ function handleProfileUpdate(event) {
     .then(response => response.json())
     .then(result => {
         if (result.status === 'success') {
-            switchTab('dashboard');
-            showBanner('Your profile has been updated successfully.', 'success');
+            // ✅ Redirect immediately to the dashboard with the message flag
+            window.location.href = '/dashboard?msg=profile_updated';
         } else {
             showBanner('Error updating profile: ' + result.message, 'error');
         }
@@ -537,41 +475,55 @@ function handleProfileUpdate(event) {
     });
 }
 
+/**
+ * Safely log the user out, destroy server session, clear local state, and return to login
+ */
+async function handleLogout(event) {
+    if (event) event.preventDefault();
 
+    try {
+        await fetch('/api/logout', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+    } catch (error) {
+        console.error("Error communicating with logout server:", error);
+    }
 
-function loadAndEditProfile() {
-    fetch('/api/get_profile')
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            document.getElementById('edit-fname').value = data.user.first_name || '';
-            document.getElementById('edit-lname').value = data.user.last_name || '';
-            document.getElementById('edit-dob').value = data.user.dob || '';
-            document.getElementById('edit-email').value = data.user.email || '';
-            document.getElementById('edit-phone').value = data.user.phone || '';
-            document.getElementById('edit-address').value = data.user.address || '';
-            
-            switchTab('edit-profile');
-        } else {
-            showBanner('Error loading profile data: ' + data.message, 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error fetching profile:', error);
-        showBanner('Network error loading profile.', 'error');
-    });
+    localStorage.removeItem('sessionData');
+    
+    // Redirect to login page with message flag
+    window.location.href = '/login?msg=logged_out';
 }
 
 /* ==========================================================================
-   CSP Security Event Initializer (Replaces all inline onclick/onsubmit)
+   DOM Initializer 
    ========================================================================== */
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Navigation Tab Buttons & CTA Buttons
-    document.querySelectorAll('[data-tab]').forEach(btn => {
-        btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
-    });
+    // URL Check for banners
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    if (urlParams.has('expired')) {
+        showBanner("Session expired, please log in again.", "info");
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
 
-    // 2. Plan Selection Buttons
+    if (urlParams.has('msg')) {
+        const msg = urlParams.get('msg');
+        if (msg === 'registered') {
+            showBanner("Account created successfully! Please log in.", "success");
+        } else if (msg === 'login_success') {
+            showBanner("Login successful!", "success");
+        } else if (msg === 'logged_out') {
+            showBanner("Logout successful!", "success");
+        } else if (msg === 'profile_updated') {
+            // ✅ Catch the profile update flag and show the banner
+            showBanner("Profile updated successfully!", "success");
+        }
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // 1. Plan Selection Buttons
     document.querySelectorAll('[data-plan-name]').forEach(btn => {
         btn.addEventListener('click', () => {
             const name = btn.getAttribute('data-plan-name');
@@ -580,14 +532,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 3. Dashboard Action Buttons
+    // 2. Action Buttons
     document.getElementById('switch-basic-btn')?.addEventListener('click', () => changeExistingPlan('Basic Plan', 39));
     document.getElementById('switch-ultra-btn')?.addEventListener('click', () => changeExistingPlan('Ultra Plan', 59));
     document.getElementById('switch-giga-btn')?.addEventListener('click', () => changeExistingPlan('Giga Plan', 79));
     document.getElementById('remove-card-btn')?.addEventListener('click', deleteSavedCard);
-    document.getElementById('edit-profile-btn')?.addEventListener('click', loadAndEditProfile);
+    document.getElementById('edit-profile-btn')?.addEventListener('click', () => window.location.href = '/edit-profile');
+    document.getElementById('btn-logout')?.addEventListener('click', handleLogout);
 
-    // 4. Form Submissions
+    // 3. Form Submissions
     const forms = [
         { id: 'signup-form', handler: handleSignUp },
         { id: 'verify-form', handler: handleVerify },
@@ -603,76 +556,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (form) form.addEventListener('submit', handler);
     });
 
-    // 💾 5. Session & Tab Restoration on Page Reload
+    // 💾 4. Restore frontend state strictly for the Dashboard rendering
     const storedSession = localStorage.getItem('sessionData');
-    const hashTab = window.location.hash.replace('#', '');
-    const storedTab = hashTab || localStorage.getItem('activeTab') || 'home';
-
     if (storedSession) {
         try {
-            const parsedSession = JSON.parse(storedSession);
-            restoreSession(parsedSession);
-
-            switchTab(storedTab, false);
+            const savedData = JSON.parse(storedSession);
+            appState.userLoggedIn = true;
+            appState.userId = savedData.user.id;
+            appState.selectedPlanName = savedData.user.selected_plan || 'Basic Plan';
+            appState.savedCard = savedData.payment;
+            
+            // If we are on the dashboard, this populates the bills
+            if(document.getElementById('dash-bill-list')) {
+                 renderDatabaseBills(savedData.bills || []);
+                 renderSavedCardUI();
+            }
         } catch (e) {
             console.error("Session restore failed", e);
             localStorage.removeItem('sessionData');
-            switchTab('home', false);
-        }
-    } else {
-        // If not logged in, prevent landing on protected tabs
-        if (storedTab === 'dashboard' || storedTab === 'edit-profile') {
-            switchTab('home', false);
-        } else {
-            switchTab(storedTab, false);
         }
     }
-
-    // Replace the current history state so the starting page has a valid state object
-    history.replaceState({ tabId: storedTab }, '', `#${storedTab}`);
-});
-
-/**
- * Restores user state & dashboard UI from local storage after page reload
- */
-function restoreSession(savedData) {
-    appState.userLoggedIn = true;
-    appState.hasSubscription = true;
-    appState.userId = savedData.user.id;
-    appState.selectedPlanName = savedData.user.selected_plan || 'Basic Plan';
-    appState.savedCard = savedData.payment;
-
-    if (appState.selectedPlanName === 'Ultra Plan') {
-        appState.selectedPlanPrice = 59;
-    } else if (appState.selectedPlanName === 'Giga Plan') {
-        appState.selectedPlanPrice = 79;
-    } else {
-        appState.selectedPlanPrice = 39;
-    }
-
-    renderDatabaseBills(savedData.bills || []);
-    renderSavedCardUI();
-
-    const userFullName = `${savedData.user.first_name} ${savedData.user.last_name}`;
-    document.getElementById('dash-greeting-title').textContent = `Great to see you, ${userFullName}!`;
-    document.getElementById('dash-plan-status').textContent = `Your internet profile is active at $${appState.selectedPlanPrice}/month.`;
-    
-    // Reveal Dashboard navigation button
-    document.getElementById('nav-dashboard').classList.remove('hidden');
-}
-
-/* ==========================================================================
-   Browser Back/Forward Button Navigation Handler
-   ========================================================================== */
-window.addEventListener('popstate', (event) => {
-    let targetTab = 'home';
-
-    if (event.state && event.state.tabId) {
-        targetTab = event.state.tabId;
-    } else if (window.location.hash) {
-        targetTab = window.location.hash.replace('#', '');
-    }
-
-    // Switch tab WITHOUT pushing duplicate state to history stack (false)
-    switchTab(targetTab, false);
 });
