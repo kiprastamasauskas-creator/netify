@@ -69,8 +69,10 @@ To validate the security posture of Netify, a dual-testing approach combining St
 <img width="1907" height="677" alt="image" src="https://github.com/user-attachments/assets/a6b36d80-1ff2-4b3f-b5fb-a27b97252e54" />
 <img width="1897" height="672" alt="image" src="https://github.com/user-attachments/assets/8dddc636-0210-4306-8112-fb358b194ca4" />
 
-* **Customer dashbaord**
+* **Customer Dashbaord**
 <img width="1885" height="796" alt="image" src="https://github.com/user-attachments/assets/cc209db9-31e1-41f7-9542-99285cda6604" />
+<img width="1812" height="387" alt="image" src="https://github.com/user-attachments/assets/ab0fca03-af99-4564-91df-c0b69938aadb" />
+
 
 
 
