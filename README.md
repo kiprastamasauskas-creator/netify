@@ -1,4 +1,4 @@
-# Netify Project Brief: An Internet Service Provider (ISP) Web Application
+# Netify, an Internet Service Provider (ISP) Web Application - Project Brief
 
 <img width="912" height="327" alt="image" src="https://github.com/user-attachments/assets/62cf0438-dd36-49af-acac-383fecba04ae" />
 
