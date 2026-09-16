@@ -496,6 +496,48 @@ async function handleLogout(event) {
     window.location.href = '/login?msg=logged_out';
 }
 
+/**
+ * Performs dynamic search on subscriber records for the admin dashboard
+ */
+async function performUserSearch() {
+    const query = document.getElementById('search-query-input').value.trim();
+    const resultsContainer = document.getElementById('search-results-container');
+
+    if (!query) {
+        resultsContainer.innerHTML = `<div style="color: #b45309; background: #fef3c7; padding: 8px; border-radius: 4px; font-size: 0.85rem;">Please enter a search term.</div>`;
+        return;
+    }
+
+    resultsContainer.innerHTML = `<div style="color: #64748b; font-size: 0.85rem;">Searching database...</div>`;
+
+    try {
+        const response = await fetch(`/api/admin/search-users?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            if (data.users.length === 0) {
+                resultsContainer.innerHTML = `<div style="color: #0369a1; background: #e0f2fe; padding: 8px; border-radius: 4px; font-size: 0.85rem;">No subscriber records found.</div>`;
+                return;
+            }
+
+            let html = `<div style="border: 1px solid #e2e8f0; border-radius: 6px; max-height: 200px; overflow-y: auto; background: #f8fafc; padding: 8px;">`;
+            data.users.forEach(user => {
+                html += `
+                    <div style="padding: 6px 8px; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem;">
+                        <strong>${user.first_name} ${user.last_name}</strong> (${user.email})<br>
+                        <span style="color: #64748b; font-size: 0.75rem;">Addr: ${user.street_address || 'N/A'} | Phone: ${user.phone_number || 'N/A'}</span>
+                    </div>`;
+            });
+            html += `</div>`;
+            resultsContainer.innerHTML = html;
+        } else {
+            resultsContainer.innerHTML = `<div style="color: #991b1b; background: #fee2e2; padding: 8px; border-radius: 4px; font-size: 0.85rem;">${data.message}</div>`;
+        }
+    } catch (err) {
+        resultsContainer.innerHTML = `<div style="color: #991b1b; background: #fee2e2; padding: 8px; border-radius: 4px; font-size: 0.85rem;">Error connecting to server.</div>`;
+    }
+}
+
 /* ==========================================================================
    DOM Initializer 
    ========================================================================== */
