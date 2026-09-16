@@ -152,10 +152,10 @@ def make_session_permanent():
 
 def get_db_connection():
     return pymysql.connect(
-        host='localhost',
-        user=os.getenv("DB_USER"),             
+        host=os.getenv("DB_HOST", "db"),
+        user=os.getenv("DB_USER", "root"),            
         password=os.getenv("DB_PASSWORD"),  
-        database=os.getenv("DB_NAME"),
+        database=os.getenv("DB_NAME", "waifi_db"),
         cursorclass=pymysql.cursors.DictCursor
     )
 
@@ -668,4 +668,4 @@ def edit_profile_page():
 
 if __name__ == '__main__':
     is_debug = os.getenv("FLASK_DEBUG", "False").lower() in ("true", "1")
-    app.run(debug=is_debug)
+    app.run(host='0.0.0.0', port=5000, debug=is_debug)

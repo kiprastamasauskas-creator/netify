@@ -22,4 +22,6 @@ Thumbs.db
 
 waifi_db.sql
 
+docker-compose.yml
+
 templates/fake_dashboard.html
